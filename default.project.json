@@ -1,0 +1,40 @@
+{
+  "name": "Dance Dance Step",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedFirst": {
+      "$keepUnknowns": true,
+      "$path": "src/ReplicatedFirst"
+    },
+    "ReplicatedStorage": {
+      "$keepUnknowns": true,
+      "$path": "src/ReplicatedStorage"
+    },
+    "ServerScriptService": {
+      "$keepUnknowns": true,
+      "$path": "src/ServerScriptService"
+    },
+    "ServerStorage": {
+      "$keepUnknowns": true,
+      "$path": "src/ServerStorage"
+    },
+    "SoundService": {
+      "$className": "SoundService",
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$properties": {
+        "CameraMaxZoomDistance": 128,
+        "CharacterBreakJointsOnDeath": false,
+        "CharacterUseJumpPower": false
+      },
+      "StarterPlayerScripts": {
+        "$keepUnknowns": true,
+        "$path": "src/StarterPlayerScripts"
+      }
+    }
+  }
+}

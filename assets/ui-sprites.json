@@ -1,0 +1,2008 @@
+{
+ "atlases": {
+  "Comic_Atlas1": {
+   "id": "135813544795780",
+   "sha1": "44b8c0cd9d6246563f0582506ae1d5d9f8689494"
+  },
+  "Comic_Atlas1_Tint": {
+   "id": "88104693271853",
+   "sha1": "75486f7a9b3ce09e3d91071aff9c5d6c60b98087"
+  },
+  "Comic_Atlas2": {
+   "id": "119084951002516",
+   "sha1": "8ee21306958806f975fc77c77734722daa1d1814"
+  },
+  "Comic_Atlas2_Tint": {
+   "id": "89988235306949",
+   "sha1": "722334aa0baa148388d07efceab804c30dd0b8d3"
+  },
+  "Comic_Atlas3": {
+   "id": "132093171260193",
+   "sha1": "144006fad27e3dedc046830cea14f2ed3b040c7f"
+  },
+  "Comic_Atlas3_Tint": {
+   "id": "139400621461618",
+   "sha1": "ee4ae4f3c35c854152ffcdab43b8a554e6b01db3"
+  },
+  "Comic_Atlas4": {
+   "id": "70918977659280",
+   "sha1": "a315d12943f622c5156e56cc38a081d449addcf7"
+  },
+  "Comic_Atlas4_Tint": {
+   "id": "135219966038964",
+   "sha1": "0f4c5f6f72958a51023be46eb07cebb5a9847251"
+  },
+  "Comic_Atlas5": {
+   "id": "98359716451505",
+   "sha1": "ef7ea433dc1124ce3216ef70dacc3839f94447b1"
+  },
+  "Comic_Atlas5_Tint": {
+   "id": "86184089409890",
+   "sha1": "7b811436349a0013cdcf6391f1cc3dc26d90fd6a"
+  },
+  "Comic_Atlas6": {
+   "id": "89016409120113",
+   "sha1": "4ee67ad7fb2297746612e4996355c3b9c0dab009"
+  },
+  "Comic_Atlas6_Tint": {
+   "id": "133615414225900",
+   "sha1": "bf56c4f4c67deb18380769d673e855d305911af3"
+  },
+  "Icon_Atlas1": {
+   "id": "134305281812943",
+   "sha1": "61ed6d16e2d0b2621e573419d9f247f887628091"
+  },
+  "Icon_Atlas1_Tint": {
+   "id": "80871426721279",
+   "sha1": "61ed6d16e2d0b2621e573419d9f247f887628091"
+  },
+  "Neon_Atlas1": {
+   "id": "107039031572358",
+   "sha1": "c92f1136a3022aa39621c0bd8ad1c6bf2d3bc309"
+  },
+  "Neon_Atlas1_Tint": {
+   "id": "95745626615535",
+   "sha1": "d885383b6de6d7d6cbe6a282d69fdc5d94c554c2"
+  },
+  "Neon_Atlas2": {
+   "id": "134315102955078",
+   "sha1": "1940d5011c3c767faf6bf782cb8fb8081c4ddfc6"
+  },
+  "Neon_Atlas2_Tint": {
+   "id": "76911127687853",
+   "sha1": "feff0e098010669846d10bcd82d2ef3d7d34a72c"
+  },
+  "Neon_Atlas3": {
+   "id": "140075725606541",
+   "sha1": "daeb35fd39f46edd2746c44bdbe2ada010013565"
+  },
+  "Neon_Atlas3_Tint": {
+   "id": "93336216466142",
+   "sha1": "260a1d0f8a271857c7c4830d40e35d0889e7817e"
+  },
+  "Neon_Atlas4": {
+   "id": "129560648799088",
+   "sha1": "8cf77be71468541e2ead59e9f4878fcdad706374"
+  },
+  "Neon_Atlas4_Tint": {
+   "id": "76798625012958",
+   "sha1": "5c7ccd1edf9d46f774797692f9a4f92699fcadae"
+  },
+  "Neon_Atlas5": {
+   "id": "128002085350061",
+   "sha1": "0f999705d6fc1f6f639a8764730845091257e46d"
+  },
+  "Neon_Atlas5_Tint": {
+   "id": "123124273867026",
+   "sha1": "f7a759164872164c00d4f0d50f6369f28d07f089"
+  },
+  "Pastel_Atlas1": {
+   "id": "116033592383082",
+   "sha1": "25b8c936c29291132d29c33df8b7c040549b697b"
+  },
+  "Pastel_Atlas1_Tint": {
+   "id": "72860418353165",
+   "sha1": "a3a9a95be1c0bca2341d9ee7e19aedb97f53ad19"
+  },
+  "Pastel_Atlas2": {
+   "id": "119984578899074",
+   "sha1": "8ea22bfd7d73f7181c89d5e9ad45cab88c930ffe"
+  },
+  "Pastel_Atlas2_Tint": {
+   "id": "123013301483993",
+   "sha1": "71bdd9bb20ef8018b9d912ba64ced864962787c5"
+  },
+  "Pastel_Atlas3": {
+   "id": "75805105825708",
+   "sha1": "a2d9e5d84a94cbb287ee24a3622729d0ae850fd7"
+  },
+  "Pastel_Atlas3_Tint": {
+   "id": "111196085463828",
+   "sha1": "281fd175e543797cde35dcb3465d658a36052515"
+  },
+  "Pastel_Atlas4": {
+   "id": "137989674694133",
+   "sha1": "4f4fb121bcc4a3a7fb9b5c2a0d8a88e1ba957bff"
+  },
+  "Pastel_Atlas4_Tint": {
+   "id": "130003763527023",
+   "sha1": "da1ecc1fb1f632018ce4e38a9d703695cc168c51"
+  },
+  "Pastel_Atlas5": {
+   "id": "134165678978060",
+   "sha1": "60417c94fe58af6bd72353ba0d507d091f7974be"
+  },
+  "Pastel_Atlas5_Tint": {
+   "id": "78246456203908",
+   "sha1": "e1f5672af03315c3f4ca69a9d00ff7247ab8942d"
+  },
+  "Pastel_Atlas6": {
+   "id": "105129180096925",
+   "sha1": "ca0469ed46bf804422454b3e0695a5050b4962be"
+  },
+  "Pastel_Atlas6_Tint": {
+   "id": "113929436843150",
+   "sha1": "7ed6c396e0898290b802ce75fe22af0c8e3a9aee"
+  },
+  "Stage_Atlas1": {
+   "id": "106857785989666",
+   "sha1": "616e66e528348909f92c3161a1702647c27153ad"
+  },
+  "Stage_Atlas1_Tint": {
+   "id": "84680836559369",
+   "sha1": "1221a972ea3fbe2509968600bab47b576779c018"
+  },
+  "Stage_Atlas2": {
+   "id": "100357319033667",
+   "sha1": "02d6f4c934855192d3bb6b1781abf47f570decbe"
+  },
+  "Stage_Atlas2_Tint": {
+   "id": "99957170185208",
+   "sha1": "b82705f6ca2b296ea6cfbdab501a5777b49daa8a"
+  },
+  "Stage_Atlas3": {
+   "id": "104126921245351",
+   "sha1": "f2307e44f4211bfbbb5a98dd0287fd5408617cd3"
+  },
+  "Stage_Atlas3_Tint": {
+   "id": "125313457325507",
+   "sha1": "1f51b8ba94b9d21dafe4fd960813be80f6d33bea"
+  },
+  "Stage_Atlas4": {
+   "id": "131194581319072",
+   "sha1": "af44fea1e8403dd3eebc4db8910009a5986c0d35"
+  },
+  "Stage_Atlas4_Tint": {
+   "id": "86757834066877",
+   "sha1": "21d14076b7768474eb6575892de44ebaa8acff98"
+  }
+ },
+ "sprites": {
+  "Comic_BackdropSplit": {
+   "atlas": "Comic_Atlas1",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    1024,
+    552
+   ]
+  },
+  "Comic_BannerDarkNeon": {
+   "atlas": "Comic_Atlas6",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    71
+   ]
+  },
+  "Comic_BannerHalftoneGrey": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    512,
+    354
+   ],
+   "size": [
+    500,
+    158
+   ]
+  },
+  "Comic_BannerHalftoneNeon": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    512,
+    887
+   ],
+   "size": [
+    503,
+    122
+   ]
+  },
+  "Comic_BannerHalftoneShadow": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    0,
+    828
+   ],
+   "size": [
+    503,
+    122
+   ]
+  },
+  "Comic_BannerNeon": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    466,
+    517
+   ],
+   "size": [
+    508,
+    147
+   ]
+  },
+  "Comic_BannerNeonOutline": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    0,
+    677
+   ],
+   "size": [
+    508,
+    147
+   ]
+  },
+  "Comic_BannerWhiteOutline": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    512,
+    677
+   ],
+   "size": [
+    508,
+    147
+   ]
+  },
+  "Comic_BannerWhiteOutlineLarge": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    186
+   ]
+  },
+  "Comic_BarFill": {
+   "atlas": "Comic_Atlas6",
+   "offset": [
+    0,
+    166
+   ],
+   "size": [
+    508,
+    57
+   ]
+  },
+  "Comic_BarMagenta": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    179
+   ]
+  },
+  "Comic_BarTrack": {
+   "atlas": "Comic_Atlas6",
+   "offset": [
+    512,
+    95
+   ],
+   "size": [
+    508,
+    58
+   ]
+  },
+  "Comic_BlockWhite": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    0,
+    517
+   ],
+   "size": [
+    462,
+    156
+   ]
+  },
+  "Comic_Burst": {
+   "atlas": "Comic_Atlas3",
+   "offset": [
+    512,
+    512
+   ],
+   "size": [
+    508,
+    469
+   ]
+  },
+  "Comic_ButtonBack": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    512,
+    439
+   ],
+   "size": [
+    508,
+    216
+   ]
+  },
+  "Comic_CardDarkTall": {
+   "atlas": "Comic_Atlas3",
+   "offset": [
+    422,
+    0
+   ],
+   "size": [
+    411,
+    508
+   ]
+  },
+  "Comic_CardDarkWide": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    280
+   ]
+  },
+  "Comic_FrameBracket": {
+   "atlas": "Comic_Atlas1",
+   "offset": [
+    0,
+    556
+   ],
+   "size": [
+    508,
+    458
+   ]
+  },
+  "Comic_FrameDarkTilted": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    435
+   ]
+  },
+  "Comic_FrameOutline": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    512,
+    678
+   ],
+   "size": [
+    508,
+    204
+   ]
+  },
+  "Comic_LabelDarkOutline": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    0,
+    190
+   ],
+   "size": [
+    508,
+    160
+   ]
+  },
+  "Comic_LabelDarkTilted": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    512,
+    190
+   ],
+   "size": [
+    508,
+    160
+   ]
+  },
+  "Comic_LabelWhiteShadow": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    507,
+    828
+   ],
+   "size": [
+    508,
+    92
+   ]
+  },
+  "Comic_LabelWhiteTilted": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    0,
+    354
+   ],
+   "size": [
+    508,
+    159
+   ]
+  },
+  "Comic_PanelOctagon": {
+   "atlas": "Comic_Atlas1",
+   "offset": [
+    512,
+    556
+   ],
+   "size": [
+    508,
+    458
+   ]
+  },
+  "Comic_SquareSmall": {
+   "atlas": "Comic_Atlas2",
+   "offset": [
+    868,
+    512
+   ],
+   "size": [
+    86,
+    102
+   ]
+  },
+  "Comic_Starburst": {
+   "atlas": "Comic_Atlas3",
+   "offset": [
+    0,
+    512
+   ],
+   "size": [
+    508,
+    501
+   ]
+  },
+  "Comic_StripDarkLeft": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    0,
+    954
+   ],
+   "size": [
+    508,
+    67
+   ]
+  },
+  "Comic_StripDarkRight": {
+   "atlas": "Comic_Atlas5",
+   "offset": [
+    512,
+    954
+   ],
+   "size": [
+    508,
+    67
+   ]
+  },
+  "Comic_StripDarkSmall": {
+   "atlas": "Comic_Atlas6",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    91
+   ]
+  },
+  "Comic_StripDarkWide": {
+   "atlas": "Comic_Atlas6",
+   "offset": [
+    0,
+    95
+   ],
+   "size": [
+    508,
+    67
+   ]
+  },
+  "Comic_TabDark": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    0,
+    887
+   ],
+   "size": [
+    508,
+    125
+   ]
+  },
+  "Comic_TabWhite": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    0,
+    439
+   ],
+   "size": [
+    508,
+    235
+   ]
+  },
+  "Comic_TagArrow": {
+   "atlas": "Comic_Atlas4",
+   "offset": [
+    0,
+    678
+   ],
+   "size": [
+    508,
+    205
+   ]
+  },
+  "Comic_TilePink": {
+   "atlas": "Comic_Atlas3",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    418,
+    508
+   ]
+  },
+  "Comic_TileWhite": {
+   "atlas": "Comic_Atlas2",
+   "offset": [
+    0,
+    512
+   ],
+   "size": [
+    439,
+    508
+   ]
+  },
+  "Comic_TileWhitePortrait": {
+   "atlas": "Comic_Atlas2",
+   "offset": [
+    443,
+    512
+   ],
+   "size": [
+    421,
+    508
+   ]
+  },
+  "Comic_TileWhiteSkewed": {
+   "atlas": "Comic_Atlas2",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    501,
+    508
+   ]
+  },
+  "Comic_TileWhiteTilted": {
+   "atlas": "Comic_Atlas2",
+   "offset": [
+    505,
+    0
+   ],
+   "size": [
+    446,
+    508
+   ]
+  },
+  "Icon_Code": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Coin": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    252,
+    0
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_CoinStack": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    504,
+    0
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Favourite": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    756,
+    0
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Gift": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    0,
+    252
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Group": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    252,
+    252
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Like": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    504,
+    252
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_QuestAim": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    756,
+    252
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_QuestClear": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    0,
+    504
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_QuestCombo": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    252,
+    504
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_QuestPerfect": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    504,
+    504
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_QuestPlay": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    756,
+    504
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_QuestScore": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    0,
+    756
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Timer": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    252,
+    756
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Trail": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    504,
+    756
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Icon_Wand": {
+   "atlas": "Icon_Atlas1",
+   "offset": [
+    756,
+    756
+   ],
+   "size": [
+    248,
+    248
+   ]
+  },
+  "Neon_ArrowLeft": {
+   "atlas": "Neon_Atlas2",
+   "offset": [
+    0,
+    512
+   ],
+   "size": [
+    449,
+    508
+   ]
+  },
+  "Neon_ArrowRight": {
+   "atlas": "Neon_Atlas2",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    452,
+    508
+   ]
+  },
+  "Neon_Backdrop": {
+   "atlas": "Neon_Atlas1",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    1024,
+    626
+   ]
+  },
+  "Neon_BannerGradient": {
+   "atlas": "Neon_Atlas5",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    97
+   ]
+  },
+  "Neon_BarDark": {
+   "atlas": "Neon_Atlas5",
+   "offset": [
+    0,
+    101
+   ],
+   "size": [
+    508,
+    56
+   ]
+  },
+  "Neon_ButtonClose": {
+   "atlas": "Neon_Atlas3",
+   "offset": [
+    0,
+    512
+   ],
+   "size": [
+    508,
+    466
+   ]
+  },
+  "Neon_ButtonGreen": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    226
+   ]
+  },
+  "Neon_ButtonPink": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    0,
+    271
+   ],
+   "size": [
+    508,
+    226
+   ]
+  },
+  "Neon_ButtonPlum": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    512,
+    271
+   ],
+   "size": [
+    508,
+    226
+   ]
+  },
+  "Neon_ButtonPurple": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    0,
+    501
+   ],
+   "size": [
+    508,
+    226
+   ]
+  },
+  "Neon_Divider": {
+   "atlas": "Neon_Atlas3",
+   "offset": [
+    0,
+    982
+   ],
+   "size": [
+    508,
+    23
+   ]
+  },
+  "Neon_HeaderBar": {
+   "atlas": "Neon_Atlas5",
+   "offset": [
+    512,
+    101
+   ],
+   "size": [
+    508,
+    47
+   ]
+  },
+  "Neon_PanelCard": {
+   "atlas": "Neon_Atlas1",
+   "offset": [
+    512,
+    630
+   ],
+   "size": [
+    508,
+    327
+   ]
+  },
+  "Neon_PanelGlassSquare": {
+   "atlas": "Neon_Atlas3",
+   "offset": [
+    342,
+    0
+   ],
+   "size": [
+    508,
+    474
+   ]
+  },
+  "Neon_PanelGlassTall": {
+   "atlas": "Neon_Atlas3",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    338,
+    508
+   ]
+  },
+  "Neon_PanelNotched": {
+   "atlas": "Neon_Atlas2",
+   "offset": [
+    453,
+    512
+   ],
+   "size": [
+    375,
+    508
+   ]
+  },
+  "Neon_PanelSquare": {
+   "atlas": "Neon_Atlas2",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    508
+   ]
+  },
+  "Neon_PillDark": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    0,
+    731
+   ],
+   "size": [
+    508,
+    151
+   ]
+  },
+  "Neon_PillGlass": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    512,
+    886
+   ],
+   "size": [
+    508,
+    126
+   ]
+  },
+  "Neon_PillHotPink": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    512,
+    501
+   ],
+   "size": [
+    508,
+    154
+   ]
+  },
+  "Neon_PillOval": {
+   "atlas": "Neon_Atlas3",
+   "offset": [
+    512,
+    512
+   ],
+   "size": [
+    508,
+    267
+   ]
+  },
+  "Neon_PillOvalLarge": {
+   "atlas": "Neon_Atlas1",
+   "offset": [
+    0,
+    630
+   ],
+   "size": [
+    508,
+    384
+   ]
+  },
+  "Neon_PillOvalWide": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    267
+   ]
+  },
+  "Neon_PillPlumSmall": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    0,
+    886
+   ],
+   "size": [
+    508,
+    134
+   ]
+  },
+  "Neon_PillWhite": {
+   "atlas": "Neon_Atlas4",
+   "offset": [
+    512,
+    731
+   ],
+   "size": [
+    508,
+    136
+   ]
+  },
+  "Neon_SlotDark": {
+   "atlas": "Neon_Atlas5",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    74
+   ]
+  },
+  "Pastel_Backdrop": {
+   "atlas": "Pastel_Atlas1",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    1024,
+    602
+   ]
+  },
+  "Pastel_BarPink": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    0,
+    921
+   ],
+   "size": [
+    508,
+    93
+   ]
+  },
+  "Pastel_BarWhite": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    512,
+    921
+   ],
+   "size": [
+    508,
+    93
+   ]
+  },
+  "Pastel_CardPale": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    432
+   ]
+  },
+  "Pastel_HeartBlush": {
+   "atlas": "Pastel_Atlas1",
+   "offset": [
+    0,
+    606
+   ],
+   "size": [
+    508,
+    367
+   ]
+  },
+  "Pastel_HeartMist": {
+   "atlas": "Pastel_Atlas1",
+   "offset": [
+    512,
+    606
+   ],
+   "size": [
+    508,
+    365
+   ]
+  },
+  "Pastel_IconBag": {
+   "atlas": "Pastel_Atlas2",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    488,
+    508
+   ]
+  },
+  "Pastel_IconGear": {
+   "atlas": "Pastel_Atlas3",
+   "offset": [
+    436,
+    512
+   ],
+   "size": [
+    508,
+    492
+   ]
+  },
+  "Pastel_IconHanger": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    448
+   ]
+  },
+  "Pastel_IconImageLilac": {
+   "atlas": "Pastel_Atlas4",
+   "offset": [
+    512,
+    491
+   ],
+   "size": [
+    508,
+    451
+   ]
+  },
+  "Pastel_IconImagePink": {
+   "atlas": "Pastel_Atlas4",
+   "offset": [
+    0,
+    491
+   ],
+   "size": [
+    508,
+    453
+   ]
+  },
+  "Pastel_IconMic": {
+   "atlas": "Pastel_Atlas3",
+   "offset": [
+    0,
+    512
+   ],
+   "size": [
+    432,
+    508
+   ]
+  },
+  "Pastel_IconNote": {
+   "atlas": "Pastel_Atlas2",
+   "offset": [
+    492,
+    0
+   ],
+   "size": [
+    465,
+    508
+   ]
+  },
+  "Pastel_IconStarLilac": {
+   "atlas": "Pastel_Atlas4",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    487
+   ]
+  },
+  "Pastel_IconStarPink": {
+   "atlas": "Pastel_Atlas4",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    487
+   ]
+  },
+  "Pastel_PillBlush": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    0,
+    452
+   ],
+   "size": [
+    508,
+    258
+   ]
+  },
+  "Pastel_PillChat": {
+   "atlas": "Pastel_Atlas6",
+   "offset": [
+    0,
+    207
+   ],
+   "size": [
+    508,
+    164
+   ]
+  },
+  "Pastel_PillHotPink": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    0,
+    714
+   ],
+   "size": [
+    508,
+    203
+   ]
+  },
+  "Pastel_PillMist": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    512,
+    452
+   ],
+   "size": [
+    508,
+    258
+   ]
+  },
+  "Pastel_PillPink": {
+   "atlas": "Pastel_Atlas5",
+   "offset": [
+    512,
+    714
+   ],
+   "size": [
+    508,
+    203
+   ]
+  },
+  "Pastel_PillPurple": {
+   "atlas": "Pastel_Atlas6",
+   "offset": [
+    512,
+    0
+   ],
+   "size": [
+    508,
+    202
+   ]
+  },
+  "Pastel_PillViolet": {
+   "atlas": "Pastel_Atlas6",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    508,
+    203
+   ]
+  },
+  "Pastel_SlashDark": {
+   "atlas": "Pastel_Atlas6",
+   "offset": [
+    512,
+    207
+   ],
+   "size": [
+    508,
+    148
+   ]
+  },
+  "Pastel_TileHotPink": {
+   "atlas": "Pastel_Atlas2",
+   "offset": [
+    0,
+    512
+   ],
+   "size": [
+    464,
+    508
+   ]
+  },
+  "Pastel_TilePink": {
+   "atlas": "Pastel_Atlas2",
+   "offset": [
+    468,
+    512
+   ],
+   "size": [
+    464,
+    508
+   ]
+  },
+  "Pastel_TileRose": {
+   "atlas": "Pastel_Atlas3",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    464,
+    508
+   ]
+  },
+  "Pastel_TileWhite": {
+   "atlas": "Pastel_Atlas3",
+   "offset": [
+    468,
+    0
+   ],
+   "size": [
+    462,
+    508
+   ]
+  },
+  "Stage_BackButton": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    366,
+    160
+   ],
+   "size": [
+    314,
+    129
+   ]
+  },
+  "Stage_BrushShort": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    327,
+    856
+   ],
+   "size": [
+    405,
+    157
+   ]
+  },
+  "Stage_BrushSlash": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    0,
+    550
+   ],
+   "size": [
+    444,
+    102
+   ]
+  },
+  "Stage_BrushTick": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    450,
+    0
+   ],
+   "size": [
+    334,
+    152
+   ]
+  },
+  "Stage_Callout": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    704,
+    774
+   ],
+   "size": [
+    286,
+    192
+   ]
+  },
+  "Stage_ChipFill": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    684,
+    160
+   ],
+   "size": [
+    298,
+    103
+   ]
+  },
+  "Stage_ChipOutline": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    442,
+    433
+   ],
+   "size": [
+    298,
+    103
+   ]
+  },
+  "Stage_CoverLilacPink": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    754,
+    388
+   ],
+   "size": [
+    256,
+    256
+   ]
+  },
+  "Stage_CoverPinkBlue": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    296,
+    0
+   ],
+   "size": [
+    256,
+    256
+   ]
+  },
+  "Stage_GradeBox": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    786,
+    451
+   ],
+   "size": [
+    205,
+    207
+   ]
+  },
+  "Stage_GradeBurst": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    638,
+    0
+   ],
+   "size": [
+    382,
+    382
+   ]
+  },
+  "Stage_IconBag": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    816,
+    0
+   ],
+   "size": [
+    188,
+    188
+   ]
+  },
+  "Stage_IconBars": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    847,
+    747
+   ],
+   "size": [
+    149,
+    146
+   ]
+  },
+  "Stage_IconDaily": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    192,
+    555
+   ],
+   "size": [
+    176,
+    188
+   ]
+  },
+  "Stage_IconDuel": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    876,
+    555
+   ],
+   "size": [
+    134,
+    136
+   ]
+  },
+  "Stage_IconGear": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    780,
+    295
+   ],
+   "size": [
+    188,
+    188
+   ]
+  },
+  "Stage_IconHanger": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    192,
+    160
+   ],
+   "size": [
+    170,
+    133
+   ]
+  },
+  "Stage_IconHome": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    788,
+    0
+   ],
+   "size": [
+    188,
+    152
+   ]
+  },
+  "Stage_IconHourglass": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    550,
+    555
+   ],
+   "size": [
+    162,
+    188
+   ]
+  },
+  "Stage_IconLock": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    716,
+    555
+   ],
+   "size": [
+    156,
+    188
+   ]
+  },
+  "Stage_IconNote": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    372,
+    555
+   ],
+   "size": [
+    174,
+    188
+   ]
+  },
+  "Stage_IconSolo": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    0,
+    856
+   ],
+   "size": [
+    156,
+    163
+   ]
+  },
+  "Stage_IconStages": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    736,
+    856
+   ],
+   "size": [
+    171,
+    156
+   ]
+  },
+  "Stage_IconStats": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    160,
+    856
+   ],
+   "size": [
+    163,
+    162
+   ]
+  },
+  "Stage_IconTick": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    0,
+    160
+   ],
+   "size": [
+    188,
+    146
+   ]
+  },
+  "Stage_IconTicket": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    0,
+    555
+   ],
+   "size": [
+    188,
+    188
+   ]
+  },
+  "Stage_IconTrophy": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    427,
+    747
+   ],
+   "size": [
+    188,
+    174
+   ]
+  },
+  "Stage_InfoBox": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    0,
+    433
+   ],
+   "size": [
+    438,
+    113
+   ]
+  },
+  "Stage_ModeTile": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    460,
+    310
+   ],
+   "size": [
+    450,
+    113
+   ]
+  },
+  "Stage_ModeTilePicked": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    0,
+    310
+   ],
+   "size": [
+    456,
+    119
+   ]
+  },
+  "Stage_Panel": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    460,
+    0
+   ],
+   "size": [
+    409,
+    418
+   ]
+  },
+  "Stage_Pennant": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    330,
+    0
+   ],
+   "size": [
+    304,
+    384
+   ]
+  },
+  "Stage_PennantLock": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    326,
+    384
+   ]
+  },
+  "Stage_PhotoSquare": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    395,
+    451
+   ],
+   "size": [
+    387,
+    386
+   ]
+  },
+  "Stage_PhotoWide": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    0,
+    774
+   ],
+   "size": [
+    455,
+    209
+   ]
+  },
+  "Stage_Pip": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    619,
+    747
+   ],
+   "size": [
+    224,
+    170
+   ]
+  },
+  "Stage_PlayButton": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    446,
+    156
+   ]
+  },
+  "Stage_PortraitHana": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    556,
+    0
+   ],
+   "size": [
+    256,
+    256
+   ]
+  },
+  "Stage_PortraitMira": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    0,
+    295
+   ],
+   "size": [
+    256,
+    256
+   ]
+  },
+  "Stage_PortraitSol": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    260,
+    295
+   ],
+   "size": [
+    256,
+    256
+   ]
+  },
+  "Stage_PortraitVivi": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    520,
+    295
+   ],
+   "size": [
+    256,
+    256
+   ]
+  },
+  "Stage_Row": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    0,
+    752
+   ],
+   "size": [
+    453,
+    61
+   ]
+  },
+  "Stage_RowMark": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    873,
+    0
+   ],
+   "size": [
+    50,
+    281
+   ]
+  },
+  "Stage_RowPicked": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    0,
+    935
+   ],
+   "size": [
+    459,
+    67
+   ]
+  },
+  "Stage_SongCard": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    357,
+    447
+   ]
+  },
+  "Stage_Splatter": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    459,
+    774
+   ],
+   "size": [
+    241,
+    201
+   ]
+  },
+  "Stage_Stamp": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    0,
+    747
+   ],
+   "size": [
+    423,
+    184
+   ]
+  },
+  "Stage_StickerFrame": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    0,
+    451
+   ],
+   "size": [
+    391,
+    401
+   ]
+  },
+  "Stage_StickerHot": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    0,
+    388
+   ],
+   "size": [
+    373,
+    382
+   ]
+  },
+  "Stage_StickerNew": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    377,
+    388
+   ],
+   "size": [
+    373,
+    382
+   ]
+  },
+  "Stage_Tab": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    448,
+    550
+   ],
+   "size": [
+    312,
+    93
+   ]
+  },
+  "Stage_TabPicked": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    0,
+    656
+   ],
+   "size": [
+    311,
+    92
+   ]
+  },
+  "Stage_Tape": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    0,
+    0
+   ],
+   "size": [
+    292,
+    291
+   ]
+  },
+  "Stage_TornStrip": {
+   "atlas": "Stage_Atlas1",
+   "offset": [
+    361,
+    0
+   ],
+   "size": [
+    95,
+    444
+   ]
+  },
+  "Stage_TotalBar": {
+   "atlas": "Stage_Atlas3",
+   "offset": [
+    463,
+    935
+   ],
+   "size": [
+    461,
+    61
+   ]
+  },
+  "Stage_XpFill": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    0,
+    987
+   ],
+   "size": [
+    316,
+    30
+   ]
+  },
+  "Stage_XpTrack": {
+   "atlas": "Stage_Atlas2",
+   "offset": [
+    320,
+    987
+   ],
+   "size": [
+    316,
+    30
+   ]
+  },
+  "Stage_YouTag": {
+   "atlas": "Stage_Atlas4",
+   "offset": [
+    315,
+    656
+   ],
+   "size": [
+    304,
+    91
+   ]
+  }
+ }
+}

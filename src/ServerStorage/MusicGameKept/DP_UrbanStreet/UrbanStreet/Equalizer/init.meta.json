@@ -1,0 +1,14 @@
+{
+  "className": "Part",
+  "properties": {
+    "Anchored": true,
+    "BottomSurface": "Smooth",
+    "CFrame": [-61.0137, -90.2619, -39.9962, 0.8969, 0, 0.4423, 0, 1, 0, -0.4423, 0, 0.8969],
+    "Color": [17, 17, 17],
+    "FormFactor": "Custom",
+    "Material": "DiamondPlate",
+    "Size": [12.2339, 10.472, 0.0617],
+    "TopSurface": "Smooth",
+    "Transparency": 1
+  }
+}

@@ -1,0 +1,16 @@
+return {
+	{ level = 2, id = "DailyQuests", kind = "Content", label = "Daily quests board" },
+	{ level = 3, id = "StarterAura", kind = "Expression", label = "First aura trail", rewards = { "StarterAura" } },
+	{ level = 4, id = "ItemShop", kind = "Power", label = "Item shop + 1 item slot", itemSlots = 1 },
+	{ level = 5, id = "Stars2", kind = "Content", label = "2-star songs + Sakura Sneakers", maxStars = 2, rewards = { "SakuraSneakers" } },
+	{ level = 6, id = "Gacha", kind = "Content", label = "Gacha crates + 1 free pull" },
+	{ level = 7, id = "EmoteWheel", kind = "Expression", label = "Emote wheel (2 slots)" },
+	{ level = 8, id = "WeeklyBoards", kind = "Status", label = "Weekly leaderboards" },
+	{ level = 9, id = "Stars3", kind = "Content", label = "3-star songs", maxStars = 3 },
+	{ level = 10, id = "DanceGrades", kind = "Status", label = "Dance Grades + nameplate" },
+	{ level = 11, id = "PhotoMode", kind = "Expression", label = "Photo mode + result-share card" },
+	{ level = 12, id = "ItemSlot2", kind = "Power", label = "2nd item slot", itemSlots = 2 },
+	{ level = 13, id = "Stars4", kind = "Content", label = "4-star songs", maxStars = 4 },
+	{ level = 14, id = "WardrobePresets", kind = "Expression", label = "Styling mirror presets" },
+	{ level = 15, id = "Stars5", kind = "Content", label = "5-star songs + \"Contender\" title", maxStars = 5, title = "Contender" },
+}

@@ -1,0 +1,59 @@
+# Roblox place/model files (never commit binaries; the place is built from src/)
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Argon / Rojo / tooling output
+.argon/
+sourcemap.json
+roblox.yml
+roblox.toml
+/Packages/
+/ServerPackages/
+/DevPackages/
+
+# Rendered audio. Built from assets/scores by scripts/generate-rhythm-map.py,
+# so the score is what gets committed, not the wav.
+assets/audio/
+
+# Scratch and backups
+scratch/
+_scratch/
+tmp/
+temp/
+_audit/
+*_compilecheck.*
+*.tmp
+*.temp
+*.bak
+*.orig
+*.swp
+*~
+
+# Secrets
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+__pycache__/
+*.pyc
+
+# Backups kept in the place's ServerStorage; Argon may write them back to disk.
+src/ServerStorage/UIBackup*/
+src/ServerStorage/_*Backup*/
