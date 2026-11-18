@@ -11,6 +11,7 @@ place; until then everything sits under Unreleased.
 
 ### Added
 
+- Studio playtests: tick the `UnlockAllCharts` attribute on Workspace to open every song and difficulty regardless of rank. Live servers ignore it.
 - The chart generator has 14 new step patterns (weave, notch, kick, S-bend, cane, crenel, ledge, comb, peak, figure-8, and diagonal bowtie, lightning, hourglass, chevron), so a chart uses about 23 kinds of move instead of 13. Just a Little Static and Do You Read Me are recharted with them on all four difficulties.
 - The stage screens fly in block by block from their side of the screen, tilted and small, and snap upright with a little overshoot while the backdrop fades; a menu window rises and pops when opened and slides when switched to. Reduced Motion skips it.
 - A fifth sprite set, `Icon_` (16 hand-cut icons), replaces the emoji on daily quests, achievements and the play-time gifts, and the coin, gift and group icons in the lobby and windows.

@@ -1,6 +1,11 @@
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
 local SongMapCatalog = require(script.Parent.SongMapCatalog)
 local LiveOpsPlan = require(script.Parent.Catalogs.LiveOpsPlan)
 local RankCatalog = require(script.Parent.Catalogs.RankCatalog)
+
+local STUDIO_UNLOCK_ATTRIBUTE = "UnlockAllCharts"
 
 local SongCollection = {}
 
@@ -47,6 +52,10 @@ function SongCollection.getRule(songId: string)
 end
 
 function SongCollection.isRankLocked(songId: string, profile: any?): boolean
+	if RunService:IsStudio() and Workspace:GetAttribute(STUDIO_UNLOCK_ATTRIBUTE) == true then
+		return false
+	end
+
 	local rank = RankCatalog.clampRank(if type(profile) == "table" then profile.rank else nil)
 
 	return SongCollection.UnlockRules.RankGate and rank < RankCatalog.requiredRank(songId)
