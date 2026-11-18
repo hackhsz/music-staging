@@ -61,15 +61,14 @@ local STAGE_RIPPLE_WIDTH = 0.9
 -- is the one bright, changing thing on the floor.
 local PAD_IDLE = Color3.fromRGB(14, 12, 16)
 local PAD_IDLE_ALT = Color3.fromRGB(24, 21, 28)
--- Only the tile to reach now is lit, in its kind's colour (the run legend's pink
--- step, blue any-tile, purple hold, yellow clap, red danger), with an icon too; the
--- one after it is a faint outline, so a busy stretch never reads as several targets.
+-- Only the tile to reach now is lit, every target in the one pink and told apart by
+-- its icon (any-tile, hold, clap), danger alone in red; the one after it is a faint
+-- outline, so a busy stretch never reads as several targets.
 local PAD_STEP_COLOR = Color3.fromRGB(255, 70, 170)
-local PAD_SHAPE_COLOR = Color3.fromRGB(70, 200, 255)
-local PAD_HOLD_COLOR = Color3.fromRGB(175, 110, 255)
-local PAD_CLAP_COLOR = Color3.fromRGB(255, 220, 60)
 local PAD_NEXT_COLOR = Color3.fromRGB(120, 112, 140)
 local PAD_NEXT_OUTLINE_THICKNESS = 0.25
+local PAD_PATTERN_TINT = 0.32
+local PAD_PATTERN_TINT_FAR = 0.1
 -- One colour for every ability pickup, so none passes for a step or a bonus.
 local PAD_PICKUP_COLOR = Color3.fromRGB(80, 235, 130)
 local PAD_PICKUP_LABEL_STUDS = Vector2.new(9, 2.2)
@@ -77,12 +76,12 @@ local PAD_PICKUP_LABEL_LIFT = 3.5
 local PAD_KIND_COLORS: { [string]: Color3 } = {
 	single = PAD_STEP_COLOR,
 	slide = PAD_STEP_COLOR,
-	shape = PAD_SHAPE_COLOR,
+	shape = PAD_STEP_COLOR,
 	danger = Color3.fromRGB(255, 70, 50),
 	item = Color3.fromRGB(255, 200, 87),
 	pose = PAD_STEP_COLOR,
-	hold = PAD_HOLD_COLOR,
-	clap = PAD_CLAP_COLOR,
+	hold = PAD_STEP_COLOR,
+	clap = PAD_STEP_COLOR,
 	rush = PAD_STEP_COLOR,
 }
 local PAD_DANGER_FILL = Color3.fromRGB(58, 10, 8)
@@ -125,7 +124,8 @@ local PAD_KIND_TONES: { [string]: { deep: Color3, bright: Color3 } } = {
 	clap = { deep = Color3.fromRGB(210, 150, 0), bright = Color3.fromRGB(255, 245, 140) },
 	danger = { deep = Color3.fromRGB(120, 6, 6), bright = Color3.fromRGB(255, 95, 40) },
 }
-local PAD_KIND_ALIASES: { [string]: string } = { slide = "single", pose = "single", rush = "single" }
+local PAD_KIND_ALIASES: { [string]: string } =
+	{ slide = "single", pose = "single", rush = "single", shape = "single", hold = "single", clap = "single" }
 -- A plain step has no icon; the others carry one so they read without colour.
 local PAD_KIND_ICONS: { [string]: string } = {
 	shape = "Diamond",
@@ -224,6 +224,7 @@ export type PadTelegraph = {
 	poseBeats: number?,
 	progress: number?,
 	runLeft: number?,
+	patternPath: { { x: number, y: number } }?,
 }
 
 type PadBar = { cframe: CFrame, size: Vector3, color: Color3, transparency: number? }
@@ -2277,7 +2278,7 @@ function BoardView:renderPad(now: number, telegraphs: { PadTelegraph }, dancer: 
 	for index, telegraph in telegraphs do
 		if ranks[index] == 1 then
 			table.insert(nextGroup, telegraph)
-		elseif ranks[index] == 2 and telegraph.kind ~= "clap" then
+		elseif ranks[index] == 2 and telegraph.kind ~= "clap" and #padTiles(telegraph) <= PAD_PREVIEW_MAX_TILES then
 			self:_addOutline(bars, padTiles(telegraph), PAD_NEXT_COLOR, PAD_NEXT_OUTLINE_THICKNESS)
 		end
 
@@ -2337,6 +2338,10 @@ function BoardView:renderPad(now: number, telegraphs: { PadTelegraph }, dancer: 
 				rise(tile.x, tile.y, PAD_KIND_COLORS[telegraph.kind] or PAD_STEP_COLOR, padLevel(telegraph))
 				mark(tile.x, tile.y, telegraph.kind)
 			end
+		end
+
+		if not holding and not lead.hidden and lead.patternPath ~= nil then
+			self:_paintPatternPath(lead, colors, levels, marks)
 		end
 
 		local arrived = standsOn(tiles, from)
@@ -2422,6 +2427,27 @@ function BoardView:renderPad(now: number, telegraphs: { PadTelegraph }, dancer: 
 	end
 
 	self:_paintRim(event, eventMix)
+end
+
+function BoardView:_paintPatternPath(
+	lead: PadTelegraph,
+	colors: { { Color3 } },
+	levels: { [number]: { [number]: PadLevel } },
+	marks: { [number]: { [number]: PadMark } }
+)
+	local path = lead.patternPath :: { { x: number, y: number } }
+
+	for index, tile in path do
+		if not Board.isValidCoord(tile.x, tile.y) then
+			break
+		end
+
+		if levels[tile.x][tile.y] == nil and marks[tile.x][tile.y] == nil then
+			local far = (index - 1) / math.max(#path - 1, 1)
+			local tint = PAD_PATTERN_TINT + (PAD_PATTERN_TINT_FAR - PAD_PATTERN_TINT) * far
+			colors[tile.x][tile.y] = padIdleColor(tile.x, tile.y):Lerp(PAD_STEP_COLOR, tint)
+		end
+	end
 end
 
 function BoardView:_paintPadTile(

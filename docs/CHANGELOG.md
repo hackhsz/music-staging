@@ -13,6 +13,8 @@ place; until then everything sits under Unreleased.
 
 - Floor charts come from a pattern library (`scripts/music/library.py`): 17 authored patterns (routes, either/or pairs, board zones, holds) make up about three quarters of each chart, generated bars on the beat fill the rest, and every step passes a reach rule against every tile you might be standing on. No danger tiles, claps, rushes, slides or items on these charts. Any-tile sets can now be up to 10 tiles. `chart-audio.py --generator walk` keeps the old floor.
 - Just a Little Static and Do You Read Me are recharted from the library on all four difficulties; each step carries its pattern id (`pid`).
+- Every target on the pad lights in the same pink (any-tile, hold and clap keep their icons); danger stays red.
+- The pad shows the whole step pattern you are in: the tiles still to come glow faintly, fading with distance. A zone of more than 4 tiles is never previewed, by the glow or the next-note outline.
 - Studio playtests: tick the `UnlockAllCharts` attribute on Workspace to open every song and difficulty regardless of rank. Live servers ignore it.
 - The chart generator has 14 new step patterns (weave, notch, kick, S-bend, cane, crenel, ledge, comb, peak, figure-8, and diagonal bowtie, lightning, hourglass, chevron), so a chart uses about 23 kinds of move instead of 13. Just a Little Static and Do You Read Me are recharted with them on all four difficulties.
 - The stage screens fly in block by block from their side of the screen, tilted and small, and snap upright with a little overshoot while the backdrop fades; a menu window rises and pops when opened and slides when switched to. Reduced Motion skips it.

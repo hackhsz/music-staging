@@ -38,6 +38,7 @@ local APPROACH_LINGER_SECONDS = 0.08
 -- onBeat on the 5x5 floor plays as a dance pad: tiles count down to their beat.
 local PAD_LAYOUT_ID = "grid5"
 local PAD_PREVIEW_LEAD_MULT = 1.5
+local PATTERN_PATH_MAX_TILES = 12
 local SAME_BEAT_SECONDS = 0.001
 local DEFAULT_HOLD_SECONDS = 0.35
 local PAD_PERFECT_FLASH = Color3.fromRGB(255, 214, 150)
@@ -941,6 +942,44 @@ function RunController._runAfterAt(self: RunController, index: number): number
 	return self.runAfter[rush.id] or session:getStepTargetTime(session:getStep(rush.firstIndex))
 end
 
+-- The tiles still to come in the pattern a note belongs to, however far ahead,
+-- so the pad can draw the whole shape instead of only the next note.
+function RunController._patternPath(self: RunController, index: number): { { x: number, y: number } }?
+	local session = self.session
+	local group = session:getStep(index).pattern
+
+	if group == nil then
+		return nil
+	end
+
+	local tiles = {}
+	local nextIndex = index + 1
+
+	while #tiles < PATTERN_PATH_MAX_TILES do
+		local step = session:getStep(nextIndex)
+
+		if step == nil then
+			break
+		end
+
+		if step.type ~= "danger" and step.type ~= "item" then
+			local zone = SongSchema.zoneOf(step)
+
+			if step.pattern ~= group or (zone ~= nil and #zone > PREVIEW_MAX_ZONE_TILES) then
+				break
+			end
+
+			for _, tile in zone or { step } do
+				table.insert(tiles, { x = tile.x, y = tile.y })
+			end
+		end
+
+		nextIndex += 1
+	end
+
+	return if #tiles > 0 then tiles else nil
+end
+
 function RunController._padTelegraphs(self: RunController, elapsed: number, beatSeconds: number): { any }
 	local session = self.session
 	local lead = Timing.getTravelWindowBeats(session.map.difficulty)
@@ -983,6 +1022,7 @@ function RunController._padTelegraphs(self: RunController, elapsed: number, beat
 				poseBeats = if poseBeats > 0 then poseBeats else nil,
 				progress = if poseBeats > 0 then math.clamp(-beatsAway / poseBeats, 0, 1) else nil,
 				runLeft = self:_runLeft(index, elapsed),
+				patternPath = self:_patternPath(index),
 				index = index,
 			})
 		end
