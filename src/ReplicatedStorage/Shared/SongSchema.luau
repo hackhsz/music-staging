@@ -41,7 +41,7 @@ SongSchema.EventKinds = {
 	freeze = true,
 }
 SongSchema.EventBeats = { min = 2, max = 16 }
-SongSchema.MaxZoneTiles = 4
+SongSchema.MaxZoneTiles = 10
 SongSchema.MemoryLength = { min = 3, max = 6 }
 SongSchema.PoseBeats = { min = 1, max = 4 }
 SongSchema.RushLength = { min = 3, max = 5 }

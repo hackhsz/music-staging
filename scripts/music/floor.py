@@ -583,6 +583,8 @@ SHAPE_WEIGHTS = {
 # A pattern used in the last few picks is picked this much less, so the dance keeps changing.
 RECENT_PATTERNS = 3
 RECENT_PATTERN_WEIGHT = 0.3
+# A walk this many notes long or more is tagged as a pattern, so the pad can draw its whole path.
+PATTERN_MIN_NOTES = 3
 
 
 class Onset:
@@ -1400,6 +1402,7 @@ class _Layout:
         self.tiles = []
         self.recent_patterns = []
         self.return_run = 0
+        self.patterns = {}
 
     def _visit(self, tile):
         self.visits[tile] = self.visits.get(tile, 0) + 1
@@ -1574,6 +1577,12 @@ class _Layout:
                 if index + offset in self.echoes:
                     placed = placed[:offset]
                     break
+
+            if name is not None and len(placed) >= PATTERN_MIN_NOTES:
+                group = len(set(self.patterns.values())) + 1
+
+                for offset in range(len(placed)):
+                    self.patterns[index + offset] = group
 
             for tile in placed:
                 self._visit(tile)
@@ -2536,6 +2545,9 @@ def build(onsets, sections, end_beat, bpm, difficulty, seed=0, rhythm=None, hits
         elif index in holds:
             step["type"] = "hold"
             step["holdSeconds"] = holds[index]
+
+        if index in layout.patterns:
+            step["pattern"] = layout.patterns[index]
 
         step["cue"] = (onset.downbeat, onset.strength / strongest)
         steps.append(step)

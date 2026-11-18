@@ -29,7 +29,7 @@ from scipy.ndimage import median_filter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from music import chart, events as floor_events, floor  # noqa: E402
+from music import chart, events as floor_events, floor, library  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_CHART_DIR = os.path.join(REPO_ROOT, "src", "ReplicatedStorage", "Shared", "Songs")
@@ -443,7 +443,11 @@ def follow_snares(onsets, scores, sections, difficulty, loudness):
     return [onset.beat for onset, keep in zip(onsets, taken) if keep]
 
 
-def floor_chart(onsets, sections, end_beat, bpm, difficulty, seed, rhythm, hits):
+def floor_chart(onsets, sections, end_beat, bpm, difficulty, seed, rhythm, hits, generator="library"):
+    if generator == "library":
+        steps, floor_sections = library.build(onsets, sections, end_beat, bpm, difficulty, seed=seed, rhythm=rhythm)
+        return steps, floor_sections, [], library.check(steps, bpm, difficulty)
+
     steps, floor_sections = floor.build(
         onsets, sections, end_beat, bpm, difficulty, seed=seed, rhythm=rhythm, hits=hits
     )
@@ -562,6 +566,12 @@ def main():
         choices=("snares",),
         help="put the floor's steps on the song's snares and claps, more of them where the song is bigger",
     )
+    parser.add_argument(
+        "--generator",
+        choices=("library", "walk"),
+        default="library",
+        help="library: authored patterns with generated bars between; walk: the older all-generated floor",
+    )
     parser.add_argument("--chart-dir", default=DEFAULT_CHART_DIR)
     parser.add_argument("--check", action="store_true", help="report, write nothing")
     args = parser.parse_args()
@@ -619,7 +629,7 @@ def main():
 
         for seed in range(len(args.id), len(args.id) + SEED_ATTEMPTS):
             floor_steps, floor_sections, floor_event_list, problems = floor_chart(
-                onsets, sections, end_beat, bpm, difficulty, seed, rhythm, hits
+                onsets, sections, end_beat, bpm, difficulty, seed, rhythm, hits, args.generator
             )
 
             if not problems:
@@ -628,6 +638,9 @@ def main():
         charts[difficulty] = (floor_steps, floor_sections)
         events_by_difficulty[difficulty] = floor_event_list
         print("          floor: %s%s" % (floor.describe(floor_steps), "  UNFAIR" if problems else ""))
+
+        if args.generator == "library":
+            print("          mix: %s" % library.describe(floor_steps, end_beat))
         print("          events: %s" % (" ".join("%s@%g" % (e["kind"], e["beat"]) for e in floor_event_list) or "none"))
 
         for problem in problems:

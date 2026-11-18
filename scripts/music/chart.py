@@ -252,6 +252,12 @@ def luau_step(step):
     if "rush" in step:
         parts.append("rush = %s" % _luau_value(step["rush"]))
 
+    if "pattern" in step:
+        parts.append("pattern = %d" % step["pattern"])
+
+    if "pid" in step:
+        parts.append('pid = "%s"' % step["pid"])
+
     if "path" in step:
         tiles = ", ".join("{ x = %d, y = %d }" % (tile["x"], tile["y"]) for tile in step["path"])
         parts.append("path = { %s }" % tiles)
