@@ -456,6 +456,16 @@ PATTERNS = {
     "uturn": [F, F, R, B, B],
     "spiral": [R, F, L, L, B, B],
     "longl": [R, R, R, F, F],
+    "weave": [F, R, F, L],
+    "notch": [R, F, R],
+    "kick": [F, F, R, B],
+    "sbend": [F, R, R, F],
+    "cane": [F, F, F, R, B],
+    "crenel": [F, R, R, B, R],
+    "ledge": [R, R, F, R, R],
+    "comb": [F, R, B, R, F],
+    "peak": [F, R, F, R, B, R, B],
+    "figure8": [R, F, L, F, R, B, L, B],
 }
 # Corner-to-corner moves, only where the profile allows diagonals.
 DIAGONAL_PATTERNS = {
@@ -466,13 +476,26 @@ DIAGONAL_PATTERNS = {
     "vee": [(1, 1), (1, -1), F],
     "slalom": [(1, -1), F, (-1, -1), F],
     "crown": [(1, -1), R, (1, 1), R],
+    "bowtie": [(1, -1), B, (-1, -1), B],
+    "lightning": [(1, -1), R, (1, -1)],
+    "hourglass": [R, (-1, -1), R, (-1, 1)],
+    "chevron": [(1, -1), (1, -1), (1, 1), (1, 1)],
 }
 PATTERNS.update(DIAGONAL_PATTERNS)
 DIAGONAL_WEIGHTS = {
-    "calm": {"diagstairs": 1, "vee": 1, "slalom": 1},
-    "build": {"diagstairs": 2, "diamond": 1.5, "triangle": 1.5, "vee": 1.5, "slalom": 1.5, "crown": 1},
-    "chorus": {"diamond": 3, "diagzig": 2.5, "triangle": 2, "diagstairs": 1.5, "vee": 1.5, "slalom": 2, "crown": 2},
-    "drop": {"diamond": 2.5, "diagzig": 3, "triangle": 2, "diagstairs": 2, "vee": 1.5, "slalom": 2, "crown": 2.5},
+    "calm": {"diagstairs": 1, "vee": 1, "slalom": 1, "lightning": 1},
+    "build": {
+        "diagstairs": 2, "diamond": 1.5, "triangle": 1.5, "vee": 1.5, "slalom": 1.5, "crown": 1, "lightning": 1.5,
+        "hourglass": 1,
+    },
+    "chorus": {
+        "diamond": 3, "diagzig": 2.5, "triangle": 2, "diagstairs": 1.5, "vee": 1.5, "slalom": 2, "crown": 2,
+        "bowtie": 2, "hourglass": 1.5, "chevron": 2,
+    },
+    "drop": {
+        "diamond": 2.5, "diagzig": 3, "triangle": 2, "diagstairs": 2, "vee": 1.5, "slalom": 2, "crown": 2.5,
+        "bowtie": 2, "lightning": 1.5, "chevron": 2.5,
+    },
 }
 JUMPY = {"jump", "jumpback", "diag", "widejacks", "hopscotch"}
 JUMP_PAIRS = {"jumpback", "diag", "widejacks"}
@@ -483,21 +506,24 @@ CORNERS = {"hook", "bend"}
 WEIGHTS = {
     "calm": {
         "pivot": 3, "jacks": 2, "box": 2, "lturn": 2, "run": 1, "wave": 1, "stairs": 1, "arc": 1.5, "uturn": 1.5,
-        "snake": 1,
+        "snake": 1, "weave": 1.5, "notch": 1.5, "kick": 1, "sbend": 1,
     },
     "build": {
         "stairs": 3, "zigzag": 2, "lturn": 2, "run": 2, "wave": 2, "box": 1, "jacks": 1, "jump": 0.5, "arc": 1.5,
-        "hook": 2, "bend": 1, "snake": 2, "uturn": 1.5, "spiral": 1.5, "longl": 1.5,
+        "hook": 2, "bend": 1, "snake": 2, "uturn": 1.5, "spiral": 1.5, "longl": 1.5, "weave": 1.5, "notch": 1.5,
+        "kick": 1.5, "sbend": 1.5, "crenel": 1.5, "ledge": 1.5, "cane": 1,
     },
     "chorus": {
         "zigzag": 3, "jacks": 2, "bigbox": 2, "run": 2, "stairs": 2, "box": 2, "wave": 2,
         "jump": 1.5, "diag": 1.5, "jumpback": 1, "cross": 1, "widejacks": 1, "hopscotch": 1, "hook": 2.5, "bend": 1.5,
-        "snake": 2, "spiral": 2, "uturn": 1.5,
+        "snake": 2, "spiral": 2, "uturn": 1.5, "crenel": 2, "comb": 2, "peak": 2, "figure8": 1.5, "ledge": 1.5,
+        "sbend": 1.5, "weave": 1.5,
     },
     "drop": {
         "jacks": 2, "zigzag": 2, "run": 2, "jump": 2, "diag": 2, "bigbox": 2, "cross": 1.5,
         "jumpback": 1.5, "wave": 1, "widejacks": 1.5, "hopscotch": 1.5, "hook": 2, "bend": 1.5,
-        "snake": 2, "spiral": 2, "longl": 1.5,
+        "snake": 2, "spiral": 2, "longl": 1.5, "figure8": 2, "peak": 2, "comb": 2, "crenel": 2, "ledge": 1.5,
+        "kick": 1.5, "notch": 1,
     },
 }
 
