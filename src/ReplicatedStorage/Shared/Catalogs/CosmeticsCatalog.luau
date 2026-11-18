@@ -1,3 +1,5 @@
+local AnimationPacks = require(script.Parent.AnimationPacks)
+
 local CosmeticsCatalog = {}
 
 -- Unlock fields drive the server purchase flow:
@@ -299,6 +301,10 @@ CosmeticsCatalog.Items = {
 	},
 }
 
+for _, item in AnimationPacks.Items do
+	table.insert(CosmeticsCatalog.Items, item)
+end
+
 -- What the shop and wardrobe call a category, where its id does not read well.
 CosmeticsCatalog.CategoryNames = {
 	glow_stick = "Hand Item",
@@ -313,7 +319,7 @@ CosmeticsCatalog.ArenaAttribute = "StageArena"
 CosmeticsCatalog.WardrobeTabs = {
 	{ id = "all", name = "All" },
 	{ id = "outfit", name = "Outfit", categories = { "glow_stick", "particle_trail", "aura" } },
-	{ id = "moves", name = "Moves", categories = { "emote", "entrance", "victory_pose" } },
+	{ id = "moves", name = "Moves", categories = { "emote", "entrance", "victory_pose", AnimationPacks.Category } },
 	{ id = "arenas", name = "Arenas", categories = { "arena" } },
 }
 

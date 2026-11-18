@@ -9,6 +9,7 @@ EmoteCatalog.Emotes = {
 		displayName = "Signature Step",
 		type = "dance_emote",
 		animationId = 507771019, -- Roblox R15 dance1
+		packSlot = "Dance",
 		looped = true,
 		maxSeconds = 6,
 		playerTriggered = true,
@@ -19,6 +20,7 @@ EmoteCatalog.Emotes = {
 		displayName = "Pixel Finale",
 		type = "ending_move",
 		animationId = 507776043, -- Roblox R15 dance2
+		packSlot = "Victory",
 		looped = false,
 		maxSeconds = 5,
 		playerTriggered = true,
@@ -29,6 +31,7 @@ EmoteCatalog.Emotes = {
 		displayName = "Fever Groove",
 		type = "reaction",
 		animationId = 507777268, -- Roblox R15 dance3
+		packSlot = "Fever",
 		looped = true,
 		maxSeconds = 12,
 		playerTriggered = false,
@@ -39,6 +42,7 @@ EmoteCatalog.Emotes = {
 		displayName = "Combo Cheer",
 		type = "reaction",
 		animationId = 507770677, -- Roblox R15 cheer
+		packSlot = "Cheer",
 		looped = false,
 		maxSeconds = 2.5,
 		playerTriggered = false,
@@ -46,6 +50,7 @@ EmoteCatalog.Emotes = {
 	},
 }
 
+-- packSlot is the AnimationPacks slot that replaces the emote while a pack is equipped.
 -- Gameplay moments mapped to catalog emotes.
 EmoteCatalog.Reactions = {
 	feverStart = "fever-groove-001",

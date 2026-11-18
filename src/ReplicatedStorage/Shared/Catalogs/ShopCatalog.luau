@@ -1,3 +1,5 @@
+local AnimationPacks = require(script.Parent.AnimationPacks)
+
 local ShopCatalog = {}
 
 -- Robux sales stay closed until the server grants what they sell: a ProcessReceipt
@@ -44,6 +46,11 @@ ShopCatalog.Sections = {
 			"crown-pose-001",
 			"heart-pose-001",
 		},
+	},
+	{
+		id = "animation-packs",
+		displayName = "Animation Packs",
+		items = AnimationPacks.ids(),
 	},
 }
 

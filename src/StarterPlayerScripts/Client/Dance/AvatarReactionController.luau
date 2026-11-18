@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AnimationPacks = require(Shared:WaitForChild("Catalogs"):WaitForChild("AnimationPacks"))
 local EmoteCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("EmoteCatalog"))
 
 -- Plays Roblox-owned catalog dance emotes on the player avatar at key
@@ -35,7 +36,13 @@ end
 function AvatarReactionController.playEmoteOnCharacter(character: Model?, emoteId: string): AnimationTrack?
 	local emote = EmoteCatalog.getEmote(emoteId)
 
-	if emote == nil or emote.animationId == nil then
+	if emote == nil then
+		return nil
+	end
+
+	local animationId = AnimationPacks.emoteAnimationId(Players:GetPlayerFromCharacter(character), emote)
+
+	if animationId == nil then
 		return nil
 	end
 
@@ -46,7 +53,7 @@ function AvatarReactionController.playEmoteOnCharacter(character: Model?, emoteI
 	end
 
 	local animation = Instance.new("Animation")
-	animation.AnimationId = ("rbxassetid://%d"):format(emote.animationId)
+	animation.AnimationId = animationId
 
 	local loaded, track = pcall(function()
 		return animator:LoadAnimation(animation)

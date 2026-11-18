@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local DancePoses = require(Shared:WaitForChild("DancePoses"))
+local AnimationPacks = require(Shared:WaitForChild("Catalogs"):WaitForChild("AnimationPacks"))
 local EmoteCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("EmoteCatalog"))
 local HighwayLanes = require(Shared:WaitForChild("HighwayLanes"))
 local InputStrategy = require(Shared:WaitForChild("InputStrategy"))
@@ -34,6 +35,7 @@ type Fields = {
 	presence: number,
 	lastCombo: number,
 	tracks: { [string]: AnimationTrack },
+	packIdle: AnimationTrack?,
 	pad: boolean,
 	padCombo: number,
 	beatAt: number,
@@ -68,6 +70,13 @@ local PAD_RUN_ACCENT = 0.3
 local PAD_FINISH_ACCENT = 1.2
 local PAD_FINISH_HOLD_SECONDS = 0.45
 local PAD_MAX_EXTRAPOLATED_BEATS = 2
+local PACK_FADE_SECONDS = 0.1
+local PACK_STEP_SLOTS = {
+	["0,-1"] = "StepUp",
+	["0,1"] = "StepDown",
+	["-1,0"] = "StepLeft",
+	["1,0"] = "StepRight",
+}
 local EMOTE_PRIORITIES = {
 	[Enum.AnimationPriority.Action] = true,
 	[Enum.AnimationPriority.Action2] = true,
@@ -103,6 +112,7 @@ function DanceAnimator.new(): DanceAnimator
 		presence = 0,
 		lastCombo = 0,
 		tracks = {},
+		packIdle = nil,
 		pad = false,
 		padCombo = 0,
 		beatAt = os.clock(),
@@ -138,6 +148,7 @@ function DanceAnimator._bind(self: DanceAnimator, character: Model)
 	self.animator = nil
 	self.base = nil
 	self.baseEmote = nil
+	self.packIdle = nil
 	table.clear(self.tracks)
 
 	-- Rig parts stream in after CharacterAdded fires.
@@ -246,31 +257,37 @@ function DanceAnimator._baseWeightFor(self: DanceAnimator, activity: number): nu
 	return full * (1 - activity * (1 - BASE_WEIGHT_UNDER_POSE))
 end
 
--- Tracks are kept per emote, so a combo crossing the loop's threshold again
+-- Tracks are kept per animation, so a combo crossing the loop's threshold again
 -- and again reuses one track instead of loading a new one each time.
 function DanceAnimator._playLoop(self: DanceAnimator, emoteId: string, weight: number): AnimationTrack?
-	local track = self.tracks[emoteId] or self:_loadLoop(emoteId)
+	local emote = EmoteCatalog.getEmote(emoteId)
+	local animationId = if emote ~= nil then AnimationPacks.emoteAnimationId(nil, emote) else nil
+
+	if animationId == nil then
+		return nil
+	end
+
+	local track = self.tracks[animationId] or self:_loadLoop(emoteId, animationId)
 
 	if track == nil then
 		return nil
 	end
 
-	self.tracks[emoteId] = track
+	self.tracks[animationId] = track
 	track:Play(BASE_FADE_SECONDS, math.max(weight, 0.001))
 
 	return track
 end
 
-function DanceAnimator._loadLoop(self: DanceAnimator, emoteId: string): AnimationTrack?
+function DanceAnimator._loadLoop(self: DanceAnimator, emoteId: string, animationId: string): AnimationTrack?
 	local animator = self.animator
-	local emote = EmoteCatalog.getEmote(emoteId)
 
-	if animator == nil or emote == nil or emote.animationId == nil then
+	if animator == nil then
 		return nil
 	end
 
 	local animation = Instance.new("Animation")
-	animation.AnimationId = ("rbxassetid://%d"):format(emote.animationId)
+	animation.AnimationId = animationId
 
 	local loaded, track = pcall(function()
 		return animator:LoadAnimation(animation)
@@ -286,6 +303,57 @@ function DanceAnimator._loadLoop(self: DanceAnimator, emoteId: string): Animatio
 	track.Looped = true
 
 	return track
+end
+
+-- An equipped animation pack's run slot. Playing at Action priority makes
+-- _emotePlaying fade the procedural dance out, so the pack owns the body.
+function DanceAnimator._playPack(self: DanceAnimator, slot: string, looped: boolean): AnimationTrack?
+	local animator = self.animator
+	local animationId = AnimationPacks.animationFor(nil, slot)
+
+	if animator == nil or animationId == nil then
+		return nil
+	end
+
+	local track = self.tracks[animationId]
+
+	if track == nil then
+		local animation = Instance.new("Animation")
+		animation.AnimationId = animationId
+
+		local loaded, result = pcall(function()
+			return animator:LoadAnimation(animation)
+		end)
+
+		if not loaded then
+			warn("[DanceDanceStep] Could not load the animation pack's " .. slot)
+			return nil
+		end
+
+		track = result
+		track.Priority = if looped then Enum.AnimationPriority.Action else Enum.AnimationPriority.Action2
+		track.Looped = looped
+		self.tracks[animationId] = track
+	end
+
+	track:Play(PACK_FADE_SECONDS)
+
+	return track
+end
+
+function DanceAnimator._packSpin(self: DanceAnimator, slot: string)
+	if self:_playPack(slot, false) == nil and slot ~= "Spin" then
+		self:_playPack("Spin", false)
+	end
+end
+
+function DanceAnimator._stopPackIdle(self: DanceAnimator)
+	local idle = self.packIdle
+
+	if idle ~= nil then
+		idle:Stop(BASE_FADE_SECONDS)
+		self.packIdle = nil
+	end
 end
 
 -- A hold note keeps its pose until the key is let go.
@@ -449,6 +517,11 @@ function DanceAnimator.padStart(self: DanceAnimator, bpm: number)
 	PadDanceMoves.reset(self.dancer)
 	self:setActive(true)
 	self:_syncFacing()
+	self:_stopPackIdle()
+
+	if self.rig ~= nil then
+		self.packIdle = self:_playPack("RoundIdle", true)
+	end
 end
 
 function DanceAnimator.padStop(self: DanceAnimator)
@@ -458,6 +531,7 @@ function DanceAnimator.padStop(self: DanceAnimator)
 
 	self.pad = false
 	self.padCombo = 0
+	self:_stopPackIdle()
 	self:setActive(false)
 	self:_syncFacing()
 end
@@ -490,9 +564,16 @@ function DanceAnimator.padStep(self: DanceAnimator, dx: number, dy: number, grad
 	)
 	PadDanceMoves.travel(self.dancer, dx, dy, kind == "rush", self.beatSeconds, now)
 
+	local stepSlot = PACK_STEP_SLOTS[`{math.sign(dx)},{math.sign(dy)}`]
+
 	if kind == "shape" then
 		PadDanceMoves.spin(self.dancer, if dx ~= 0 then -dx else self.variant % 2 * 2 - 1, now)
+		self:_packSpin("Spin")
 		return
+	end
+
+	if stepSlot ~= nil and self:_playPack(stepSlot, false) == nil and stepSlot == "StepDown" then
+		self:_playPack("StepUp", false)
 	end
 
 	if not perfect then
@@ -503,6 +584,7 @@ function DanceAnimator.padStep(self: DanceAnimator, dx: number, dy: number, grad
 
 	if self.perfectSteps % PAD_SPIN_EVERY == 0 then
 		PadDanceMoves.spin(self.dancer, if dx ~= 0 then -dx else self.variant % 2 * 2 - 1, now)
+		self:_packSpin("Spin")
 	end
 end
 
@@ -563,6 +645,7 @@ function DanceAnimator.padRunDone(self: DanceAnimator, perfect: boolean)
 	self.variant += 1
 	PadDanceMoves.spin(self.dancer, self.variant % 2 * 2 - 1, now)
 	PadDanceMoves.hold(self.dancer, PadDanceMoves.pickRunFinish(self.variant), PAD_FINISH_HOLD_SECONDS, now)
+	self:_packSpin("Spin")
 end
 
 function DanceAnimator.padHoldStart(self: DanceAnimator, seconds: number)
@@ -620,6 +703,7 @@ function DanceAnimator.padVerdict(self: DanceAnimator, grade: string, combo: num
 		self.lastCombo = combo
 		PadDanceMoves.spin(self.dancer, self.variant % 2 * 2 - 1, now)
 		PadDanceMoves.strike(self.dancer, PadDanceMoves.Flourish, 1, now)
+		self:_packSpin("SpinKick")
 	end
 end
 

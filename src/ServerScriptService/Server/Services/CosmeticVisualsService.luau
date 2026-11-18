@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local AnimationPacks = require(Shared:WaitForChild("Catalogs"):WaitForChild("AnimationPacks"))
 local CosmeticsCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("CosmeticsCatalog"))
 local CosmeticBuilds = require(Shared:WaitForChild("CosmeticBuilds"))
 
@@ -18,6 +19,8 @@ local TRAIL_COLORS = {
 	Color3.fromRGB(255, 79, 178),
 }
 local AURA_COLOR = Color3.fromRGB(255, 211, 92)
+local BASE_ANIMATION_ATTRIBUTE = "BaseAnimationId"
+local PACK_ANIMATION_ATTRIBUTE = "PackAnimationId"
 
 function CosmeticVisualsService.new(playerDataService)
 	return setmetatable({
@@ -141,6 +144,59 @@ local function applyBodyTint(character: Model, tint: { torso: Color3?, legs: Col
 	end
 end
 
+-- The Animate script only reloads a slot when its Animation instance changes, so
+-- a swapped slot gets a fresh copy rather than a new AnimationId on the old one.
+local function setSlotAnimation(animation: Animation, override: string?)
+	local current = animation.AnimationId
+	local base = animation:GetAttribute(BASE_ANIMATION_ATTRIBUTE)
+
+	-- The avatar's own animations can land after ours; they become the new default.
+	if type(base) ~= "string" or (current ~= base and current ~= animation:GetAttribute(PACK_ANIMATION_ATTRIBUTE)) then
+		base = current
+	end
+
+	local wanted = override or base :: string
+
+	if wanted == current then
+		animation:SetAttribute(BASE_ANIMATION_ATTRIBUTE, base)
+		return
+	end
+
+	local replacement = animation:Clone()
+	replacement.AnimationId = wanted
+	replacement:SetAttribute(BASE_ANIMATION_ATTRIBUTE, base)
+	replacement:SetAttribute(PACK_ANIMATION_ATTRIBUTE, override)
+	replacement.Parent = animation.Parent
+	animation:Destroy()
+end
+
+local function applyAnimationPack(player: Player, character: Model, packId: string?)
+	local pack = AnimationPacks.get(packId)
+	player:SetAttribute(AnimationPacks.PlayerAttribute, if pack ~= nil then pack.id else nil)
+
+	local animate = character:FindFirstChild("Animate")
+
+	if animate == nil then
+		return
+	end
+
+	for slot, valueName in AnimationPacks.MovementSlots do
+		local value = animate:FindFirstChild(valueName)
+
+		if value == nil then
+			continue
+		end
+
+		local override = if pack ~= nil then pack.animations[slot] else nil
+
+		for _, child in value:GetChildren() do
+			if child:IsA("Animation") then
+				setSlotAnimation(child, override)
+			end
+		end
+	end
+end
+
 function CosmeticVisualsService:clear(player: Player)
 	local connection = self.trailConnections[player]
 
@@ -182,6 +238,17 @@ function CosmeticVisualsService:applyEquipped(player: Player)
 
 	self:clear(player)
 	restoreBodyColors(character)
+	applyAnimationPack(player, character, profile.equipped[AnimationPacks.Category])
+
+	if not player:HasAppearanceLoaded() then
+		task.spawn(function()
+			player.CharacterAppearanceLoaded:Wait()
+
+			if player.Character == character then
+				applyAnimationPack(player, character, profile.equipped[AnimationPacks.Category])
+			end
+		end)
+	end
 
 	local folder = Instance.new("Folder")
 	folder.Name = VISUALS_FOLDER_NAME

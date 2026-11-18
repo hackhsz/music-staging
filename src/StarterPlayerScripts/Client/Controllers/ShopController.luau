@@ -203,6 +203,10 @@ function ShopController._buildSections(self: ShopController): { any }
 			})
 		end
 
+		if #entries == 0 then
+			continue
+		end
+
 		table.insert(sections, {
 			id = section.id,
 			displayName = string.upper(section.displayName),

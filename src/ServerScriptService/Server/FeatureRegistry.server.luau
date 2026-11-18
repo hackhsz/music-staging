@@ -16,6 +16,7 @@ local modules = {
 	"Catalogs/SocialRewards",
 	"Catalogs/LiveOpsPlan",
 	"SongCollection",
+	"Catalogs/AnimationPacks",
 	"Catalogs/CosmeticsCatalog",
 	"Catalogs/EmoteCatalog",
 	"Catalogs/StageCatalog",
