@@ -250,7 +250,7 @@ function StagesScreen.new(gui: ScreenGui?): StagesScreen
 		setVisible(setlist, hidden, false)
 	end
 
-	for _, hidden in { "LeagueTile", "StageBadge", "StageCard", "StagesNotice" } do
+	for _, hidden in { "LeagueTile", "StageBadge", "StageCard", "StagesNotice", "DailyChip" } do
 		setVisible(fields.lobby, hidden, false)
 	end
 
@@ -593,7 +593,6 @@ function StagesScreen._renderLobby(self: StagesScreen)
 		"PlayButton.Label",
 		if stageMode and challenger ~= nil and challenger.state ~= "PRACTICE" then "CHALLENGE" else "PLAY"
 	)
-	setVisible(self.lobby, "DailyChip", snapshot.dailyAvailable == true)
 end
 
 function StagesScreen._renderModeList(self: StagesScreen)

@@ -39,6 +39,7 @@ local PHONE_VIEWPORT_HEIGHT = 520
 local AUTHORED_TIMEOUT = 60
 local BUTTON_HOVER_SCALE = 1.08
 local BUTTON_HOVER_TILT = -3
+local SQUARE_TOLERANCE_PIXELS = 4
 local BUTTON_PRESS_SCALE = 0.92
 local BUTTON_HOVER_SECONDS = 0.14
 local BUTTON_PRESS_SECONDS = 0.06
@@ -284,10 +285,27 @@ function UiKit.bindSounds(button: GuiButton)
 	end)
 end
 
+-- Round and square buttons (the icon rails, close buttons) only grow: a tilt
+-- spins their icon and swings the label hung under them.
+local function isSquare(button: GuiButton): boolean
+	local size = button.AbsoluteSize
+	return math.abs(size.X - size.Y) <= SQUARE_TOLERANCE_PIXELS
+end
+
 -- Grows and tilts a button under the pointer and dips it on press. It drives the
 -- button's Pop scale, which a GuiObject can only have one of, so a screen that
 -- also animates Pop gets onHover to step aside while the pointer is on it.
 function UiKit.bindHover(button: GuiButton, onHover: ((boolean) -> ())?): () -> ()
+	local authoredScale = button:FindFirstChildOfClass("UIScale")
+
+	-- A designer's own UIScale already animates this button, and a GuiObject
+	-- honours only one, so a Pop scale here would be ignored or fight it.
+	if authoredScale ~= nil and authoredScale.Name ~= "Pop" then
+		UiKit.bindSounds(button)
+
+		return function() end
+	end
+
 	local scale = UiKit.scaleOf(button, "Pop")
 	local restTilt = button.Rotation
 	local hovered = false

@@ -370,7 +370,15 @@ end
 
 function ShopPanel._paintTabs(self: ShopPanel)
 	for _, tab in self.tabs do
-		paintTag(tab.button, tab.section == self.section)
+		local picked = tab.section == self.section
+		local skin = UiKit.child(tab.button, "TabSkin", "ImageLabel")
+		local image = tab.button:GetAttribute(if picked then "TabSelectedImage" else "TabImage")
+
+		paintTag(tab.button, picked)
+
+		if skin ~= nil and type(image) == "string" then
+			skin.Image = image
+		end
 	end
 end
 

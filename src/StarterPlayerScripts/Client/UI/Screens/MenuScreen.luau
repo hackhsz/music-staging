@@ -196,7 +196,9 @@ function MenuScreen.new(gui: ScreenGui?): MenuScreen
 	return self
 end
 
--- A rail button glows under the pointer and while its window is open.
+-- A rail button glows under the pointer and while its window is open. A sprite
+-- name glows only atlas art: on a whole-image button it would stretch an atlas
+-- cut of a different shape over it.
 function MenuScreen._bindNavGlow(self: MenuScreen, key: string, button: GuiButton)
 	if not button:IsA("ImageButton") then
 		return
@@ -204,6 +206,12 @@ function MenuScreen._bindNavGlow(self: MenuScreen, key: string, button: GuiButto
 
 	local rest = UiKit.imageState(button)
 	local glow = button:GetAttribute("HoverImage")
+
+	if type(glow) ~= "string" or (rest.size == Vector2.zero and not glow:match("^rbxassetid://")) then
+		UiKit.bindHover(button)
+		return
+	end
+
 	local hovered = false
 
 	local function paint()

@@ -11,7 +11,8 @@ local SLIDE_SECONDS = 0.3
 -- this long so it does not slide in just to slide out again.
 local SHOW_DELAY_SECONDS = 0.6
 local RAIL_OFFSCREEN = UDim2.fromScale(-0.2, 0)
-local COLUMN_OFFSCREEN = UDim2.fromScale(0.35, 0)
+-- Far enough to carry the Card's TopButtons, which sit left of the column, off too.
+local COLUMN_OFFSCREEN = UDim2.fromScale(0.5, 0)
 local DONE_TEXT = "DONE"
 local DONE_TRANSPARENCY = 0.45
 local DAILY_ROWS = 3
@@ -19,7 +20,7 @@ local NO_RANK_TEXT = "-"
 local READY_TAG = "Done"
 local GAIN_ROLL_SECONDS = 0.7
 local GAIN_FLOAT_SECONDS = 1.1
-local GAIN_FLOAT_RISE = UDim2.fromScale(0, -0.3)
+local GAIN_FLOAT_RISE = UDim2.fromScale(0, -0.12)
 local STAT_ROWS = {
 	bestScore = "BestScore",
 	bestCombo = "BestCombo",
@@ -99,7 +100,9 @@ local function withCommas(value: number): string
 	return (formatted:gsub("^,", ""))
 end
 
--- A rail button glows with its HoverImage attribute under the pointer.
+-- A rail button glows with its HoverImage attribute under the pointer. A sprite
+-- name glows only atlas art: on a whole-image button it would stretch an atlas
+-- cut of a different shape over it.
 local function bindNavHover(button: GuiButton?)
 	if button == nil or not button:IsA("ImageButton") then
 		return
@@ -108,8 +111,13 @@ local function bindNavHover(button: GuiButton?)
 	local rest = UiKit.imageState(button)
 	local glow = button:GetAttribute("HoverImage")
 
+	if type(glow) ~= "string" or (rest.size == Vector2.zero and not glow:match("^rbxassetid://")) then
+		UiKit.bindHover(button)
+		return
+	end
+
 	UiKit.bindHover(button, function(active: boolean)
-		UiKit.setImage(button, if active and type(glow) == "string" then glow else rest)
+		UiKit.setImage(button, if active then glow else rest)
 	end)
 end
 
@@ -132,10 +140,10 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 	local buttons = UiKit.authored(rail, "Buttons", "GuiObject")
 	local column = UiKit.authored(gui, "RightColumn", "GuiObject")
 	local card = UiKit.authored(column, "Card", "GuiObject")
-	local daily = UiKit.authored(column, "Daily", "GuiObject")
+	local daily = UiKit.child(column, "Daily", "GuiObject")
 	local stats = UiKit.authored(column, "Stats", "GuiObject")
 	local topButtons = UiKit.authored(card, "TopButtons", "GuiObject")
-	local rankStrip = UiKit.authored(column, "RankStrip", "GuiObject")
+	local rankStrip = UiKit.authored(card, "RankStrip", "GuiObject")
 	local coinGain = UiKit.authored(card, "CoinGain", "TextLabel")
 
 	local fields: Fields = {

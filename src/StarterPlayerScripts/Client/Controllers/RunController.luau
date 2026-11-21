@@ -39,6 +39,8 @@ local APPROACH_LINGER_SECONDS = 0.08
 local PAD_LAYOUT_ID = "grid5"
 local PAD_PREVIEW_LEAD_MULT = 1.5
 local PATTERN_PATH_MAX_TILES = 12
+-- A zone bigger than this is too much to read ahead, so nothing previews it.
+local PREVIEW_MAX_ZONE_TILES = 4
 local SAME_BEAT_SECONDS = 0.001
 local DEFAULT_HOLD_SECONDS = 0.35
 local PAD_PERFECT_FLASH = Color3.fromRGB(255, 214, 150)
@@ -78,7 +80,6 @@ local BOARD_LEGEND = {
 	{ "RED", UiKit.Colors.Red, "DANGER" },
 }
 -- The charts whose floor draws a path from the dancer to the next target.
-local PATH_ARROW_DIFFICULTIES = { easy = true, normal = true }
 local ONBOARDING = {
 	standWait = "WALK TO THE LIT TILE AND STAND STILL - THE BEAT LANDS ON YOU",
 	arriveOnTime = "REACH THE LIT TILE JUST BEFORE THE BEAT",
@@ -132,6 +133,7 @@ type Fields = {
 	pauseStartedAt: number?,
 	pendingStepIndex: number?,
 	previewedStepIndex: number?,
+	shownPattern: number?,
 	holdSubmitElapsed: number?,
 	songDurationSeconds: number?,
 	performanceGoal: any,
@@ -246,6 +248,7 @@ function RunController.new(deps: Deps): RunController
 		pauseStartedAt = nil,
 		pendingStepIndex = nil,
 		previewedStepIndex = nil,
+		shownPattern = nil,
 		holdSubmitElapsed = nil,
 		songDurationSeconds = nil,
 		performanceGoal = nil,
@@ -980,8 +983,24 @@ function RunController._patternPath(self: RunController, index: number): { { x: 
 	return if #tiles > 0 then tiles else nil
 end
 
+-- Studio only: names each pattern in the output as it becomes the one to play.
+function RunController._logPattern(self: RunController)
+	local step = self.session:getCurrentStep()
+
+	if step == nil or step.pattern == nil or step.pattern == self.shownPattern then
+		return
+	end
+
+	self.shownPattern = step.pattern
+
+	if RunService:IsStudio() then
+		print(("[DanceDanceStep] pattern %s (#%d) from beat %.2f"):format(tostring(step.pid), step.pattern, step.beat))
+	end
+end
+
 function RunController._padTelegraphs(self: RunController, elapsed: number, beatSeconds: number): { any }
 	local session = self.session
+	self:_logPattern()
 	local lead = Timing.getTravelWindowBeats(session.map.difficulty)
 	local telegraphs = {}
 	local index = session.nextStepIndex
@@ -1348,6 +1367,7 @@ function RunController._onStartSong(self: RunController, payload: any)
 	self.pauseStartedAt = nil
 	self.pendingStepIndex = nil
 	self.previewedStepIndex = nil
+	self.shownPattern = nil
 	self.holdSubmitElapsed = nil
 	self.firstHitTracked = false
 	self.firstMissTracked = false
@@ -1391,7 +1411,6 @@ function RunController._onStartSong(self: RunController, payload: any)
 	deps.boardView:setApproachMarkers({})
 	deps.boardView:hideCountdown()
 	deps.boardView:setPadLook(self.padMode)
-	deps.boardView:setPathArrows(self.padMode and PATH_ARROW_DIFFICULTIES[payload.difficulty] == true)
 	hud.pad:setClapEnabled(self.padMode)
 	deps.highway:stop()
 	self:_stopPadExtras()

@@ -26,7 +26,7 @@ export type MultiplayerPanel = typeof(setmetatable({} :: Fields, MultiplayerPane
 
 function MultiplayerPanel.new(gui: ScreenGui?): MultiplayerPanel
 	local statusLabel = UiKit.authored(gui, "Status", "TextLabel")
-	local modeButton = UiKit.authored(gui, "RightColumn.Actions.ModeButton", "GuiButton")
+	local modeButton = UiKit.authored(gui, "Actions.ModeButton", "GuiButton")
 
 	local fields: Fields = {
 		statusLabel = statusLabel,

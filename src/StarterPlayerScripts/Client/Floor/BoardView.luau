@@ -67,8 +67,12 @@ local PAD_IDLE_ALT = Color3.fromRGB(24, 21, 28)
 local PAD_STEP_COLOR = Color3.fromRGB(255, 70, 170)
 local PAD_NEXT_COLOR = Color3.fromRGB(120, 112, 140)
 local PAD_NEXT_OUTLINE_THICKNESS = 0.25
-local PAD_PATTERN_TINT = 0.32
-local PAD_PATTERN_TINT_FAR = 0.1
+-- A next note bigger than this is too much to read ahead, so it gets no outline.
+local PAD_PREVIEW_MAX_TILES = 4
+local PAD_PATTERN_TINT = 0.6
+local PAD_PATTERN_TINT_FAR = 0.3
+local PAD_PATTERN_OUTLINE_COLOR = Color3.fromRGB(200, 60, 140)
+local PAD_PATTERN_OUTLINE_THICKNESS = 0.15
 -- One colour for every ability pickup, so none passes for a step or a bonus.
 local PAD_PICKUP_COLOR = Color3.fromRGB(80, 235, 130)
 local PAD_PICKUP_LABEL_STUDS = Vector2.new(9, 2.2)
@@ -1201,20 +1205,6 @@ local function clapSpot(telegraph: PadTelegraph, dancer: { x: number, y: number 
 	return { x = telegraph.x, y = telegraph.y }
 end
 
-local function nearestTile(tiles: { { x: number, y: number } }, from: { x: number, y: number }): { x: number, y: number }
-	local best, bestDistance = tiles[1], math.huge
-
-	for _, tile in tiles do
-		local distance = math.abs(tile.x - from.x) + math.abs(tile.y - from.y)
-
-		if distance < bestDistance then
-			best, bestDistance = tile, distance
-		end
-	end
-
-	return best
-end
-
 local function standsOn(tiles: { { x: number, y: number } }, coord: { x: number, y: number }?): boolean
 
 	if coord == nil then
@@ -1548,11 +1538,6 @@ end
 
 -- The onBeat pad look: the dark checker, numbers on the tiles, and no
 -- approach frames, settle ring or floating countdown. Off restores the rest.
--- An arrow on the floor from the dancer to the next target, for the easier charts.
-function BoardView:setPathArrows(active: boolean)
-	self.padPathArrows = active
-end
-
 function BoardView:setPadLook(active: boolean)
 	self.padLook = active
 	self.padFlashes = {}
@@ -2341,10 +2326,9 @@ function BoardView:renderPad(now: number, telegraphs: { PadTelegraph }, dancer: 
 		end
 
 		if not holding and not lead.hidden and lead.patternPath ~= nil then
-			self:_paintPatternPath(lead, colors, levels, marks)
+			self:_paintPatternPath(bars, lead, colors, levels, marks)
 		end
 
-		local arrived = standsOn(tiles, from)
 		local path = if lead.kind == "slide" and type(lead.path) == "table" and #lead.path > 0 then lead.path else nil
 
 		-- The count stays on after the dancer arrives: a step is Perfect when it lands
@@ -2357,8 +2341,6 @@ function BoardView:renderPad(now: number, telegraphs: { PadTelegraph }, dancer: 
 			for index = 1, #path - 1 do
 				self:_addArrow(bars, path[index], path[index + 1], PAD_STEP_COLOR)
 			end
-		elseif self.padPathArrows and from ~= nil and not arrived and #tiles > 0 then
-			self:_addArrow(bars, from, nearestTile(tiles, from), PAD_KIND_COLORS[lead.kind] or PAD_STEP_COLOR)
 		end
 	end
 
@@ -2430,6 +2412,7 @@ function BoardView:renderPad(now: number, telegraphs: { PadTelegraph }, dancer: 
 end
 
 function BoardView:_paintPatternPath(
+	bars: { PadBar },
 	lead: PadTelegraph,
 	colors: { { Color3 } },
 	levels: { [number]: { [number]: PadLevel } },
@@ -2446,6 +2429,7 @@ function BoardView:_paintPatternPath(
 			local far = (index - 1) / math.max(#path - 1, 1)
 			local tint = PAD_PATTERN_TINT + (PAD_PATTERN_TINT_FAR - PAD_PATTERN_TINT) * far
 			colors[tile.x][tile.y] = padIdleColor(tile.x, tile.y):Lerp(PAD_STEP_COLOR, tint)
+			self:_addOutline(bars, { tile }, PAD_PATTERN_OUTLINE_COLOR, PAD_PATTERN_OUTLINE_THICKNESS)
 		end
 	end
 end
