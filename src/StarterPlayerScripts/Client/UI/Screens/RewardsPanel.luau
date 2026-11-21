@@ -1,11 +1,9 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 
 local MenuScreen = require(script.Parent.MenuScreen)
 local UiKit = require(script.Parent.Parent.UiKit)
 
 local WINDOW = "rewards"
-local READY_TAG = "Primary"
 local OK_COLOR = Color3.fromRGB(120, 235, 150)
 local FAIL_COLOR = Color3.fromRGB(255, 110, 130)
 
@@ -220,11 +218,7 @@ function RewardsPanel.setGiftState(self: RewardsPanel, id: string, state: GiftSt
 	end
 
 	if tile.claimButton ~= nil then
-		if state == "ready" then
-			CollectionService:AddTag(tile.claimButton, READY_TAG)
-		else
-			CollectionService:RemoveTag(tile.claimButton, READY_TAG)
-		end
+		UiKit.setLit(tile.claimButton, state == "ready")
 	end
 end
 

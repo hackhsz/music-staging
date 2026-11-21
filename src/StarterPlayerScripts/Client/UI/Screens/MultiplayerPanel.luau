@@ -14,6 +14,8 @@ type Fields = {
 	lobbyAnchor: Vector2,
 	lobbyPosition: UDim2,
 	wanted: boolean,
+	modeWanted: boolean,
+	covered: boolean,
 	stageLayout: boolean,
 	inMatch: boolean,
 }
@@ -35,6 +37,8 @@ function MultiplayerPanel.new(gui: ScreenGui?): MultiplayerPanel
 		lobbyAnchor = if statusLabel ~= nil then statusLabel.AnchorPoint else Vector2.zero,
 		lobbyPosition = if statusLabel ~= nil then statusLabel.Position else UDim2.new(),
 		wanted = true,
+		modeWanted = if modeButton ~= nil then modeButton.Visible else true,
+		covered = false,
 		stageLayout = false,
 		inMatch = false,
 	}
@@ -71,8 +75,19 @@ function MultiplayerPanel._refresh(self: MultiplayerPanel)
 end
 
 function MultiplayerPanel.setModeVisible(self: MultiplayerPanel, visible: boolean)
+	self.modeWanted = visible
+	self:_refreshMode()
+end
+
+-- A full-screen stage panel is over the lobby; the button would show through it.
+function MultiplayerPanel.setCovered(self: MultiplayerPanel, covered: boolean)
+	self.covered = covered
+	self:_refreshMode()
+end
+
+function MultiplayerPanel._refreshMode(self: MultiplayerPanel)
 	if self.modeButton ~= nil then
-		self.modeButton.Visible = visible
+		self.modeButton.Visible = self.modeWanted and not self.covered
 	end
 end
 

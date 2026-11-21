@@ -60,6 +60,7 @@ type Fields = {
 	onRoadmap: (() -> ())?,
 	onLobbyShown: (() -> ())?,
 	onSetlistOpened: (() -> ())?,
+	onOpenChanged: (() -> ())?,
 	stageUpRank: number?,
 	finishStageUp: (() -> ())?,
 }
@@ -219,6 +220,7 @@ function StagesScreen.new(gui: ScreenGui?): StagesScreen
 		onRoadmap = nil,
 		onLobbyShown = nil,
 		onSetlistOpened = nil,
+		onOpenChanged = nil,
 		stageUpRank = nil,
 		finishStageUp = nil,
 	}
@@ -384,6 +386,10 @@ function StagesScreen.bindSetlistOpened(self: StagesScreen, callback: () -> ())
 	self.onSetlistOpened = callback
 end
 
+function StagesScreen.bindOpenChanged(self: StagesScreen, callback: () -> ())
+	self.onOpenChanged = callback
+end
+
 function StagesScreen.isLobbyShown(self: StagesScreen): boolean
 	return self.lobbyShown
 end
@@ -476,6 +482,10 @@ function StagesScreen.openSetlist(self: StagesScreen)
 	if self.onSetlistOpened ~= nil then
 		self.onSetlistOpened()
 	end
+
+	if self.onOpenChanged ~= nil then
+		self.onOpenChanged()
+	end
 end
 
 function StagesScreen.closeSetlist(self: StagesScreen)
@@ -485,6 +495,10 @@ function StagesScreen.closeSetlist(self: StagesScreen)
 	end
 
 	self:_refreshLobby()
+
+	if self.onOpenChanged ~= nil then
+		self.onOpenChanged()
+	end
 end
 
 function StagesScreen.closeAll(self: StagesScreen)

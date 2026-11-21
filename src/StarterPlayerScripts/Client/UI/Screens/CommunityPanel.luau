@@ -1,11 +1,9 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 
 local MenuScreen = require(script.Parent.MenuScreen)
 local UiKit = require(script.Parent.Parent.UiKit)
 
 local WINDOW = "community"
-local READY_TAG = "Primary"
 -- The authored rows are named after the SocialRewards action they claim.
 local SOCIAL_ROWS = { like = "Like", favorite = "Favorite", community = "Community" }
 
@@ -37,12 +35,8 @@ CommunityPanel.__index = CommunityPanel
 export type CommunityPanel = typeof(setmetatable({} :: Fields, CommunityPanel))
 
 local function paintReady(button: GuiButton?, ready: boolean)
-	if button == nil then
-		return
-	elseif ready then
-		CollectionService:AddTag(button, READY_TAG)
-	else
-		CollectionService:RemoveTag(button, READY_TAG)
+	if button ~= nil then
+		UiKit.setLit(button, ready)
 	end
 end
 

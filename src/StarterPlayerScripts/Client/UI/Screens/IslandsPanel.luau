@@ -6,7 +6,6 @@ local UiKit = require(script.Parent.Parent.UiKit)
 local WINDOW = "islands"
 local MAX_TABS = 2
 local HERE_TEXT = "YOU ARE HERE"
-local DIMMED = 0.45
 
 export type Island = {
 	id: string,
@@ -237,13 +236,13 @@ function IslandsPanel._drawDetail(self: IslandsPanel)
 	local canTravel = island ~= nil and not island.here
 
 	if self.travelLabel ~= nil then
-		self.travelLabel.Text = if canTravel then "TRAVEL" else "HERE"
+		self.travelLabel.Text = if canTravel then "TRAVEL" else HERE_TEXT
 	end
 
 	local travel = self.travelButton
 
 	if travel ~= nil and travel:IsA("ImageButton") then
-		travel.ImageTransparency = if canTravel then 0 else DIMMED
+		UiKit.setButtonEnabled(travel, canTravel)
 	end
 end
 

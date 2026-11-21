@@ -346,7 +346,20 @@ RemoteContract.Events = {
 			"claimedRewards",
 			"rewardCooldowns",
 			"timeRewards",
+			"stagePass",
+			"passes",
+			"boughtOffers",
+			"setRoad",
 		},
+	},
+	ClaimPassTier = {
+		name = "ClaimPassTier",
+		direction = "client_to_server",
+		payload = {
+			"tier",
+			"row",
+		},
+		rateLimitPerSecond = 3,
 	},
 	ClaimReward = {
 		name = "ClaimReward",

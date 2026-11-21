@@ -1,5 +1,4 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -11,7 +10,6 @@ local WINDOW = "loadout"
 local CARDS_PER_ROW = 4
 local ROW_GAP = 6
 -- A styled (Pill) tab shows it is picked with this tag.
-local PICKED_TAG = "Primary"
 local EQUIPPED_COLOR = Color3.fromRGB(106, 255, 128)
 local CHARGE_COLOR = Color3.fromRGB(255, 255, 255)
 local FILL_POP = 1.15
@@ -419,10 +417,8 @@ function AbilityPicker._paint(self: AbilityPicker)
 
 		if image ~= nil and tab.button:IsA("ImageButton") then
 			UiKit.setImage(tab.button, image)
-		elseif tab.group == self.group then
-			CollectionService:AddTag(tab.button, PICKED_TAG)
 		else
-			CollectionService:RemoveTag(tab.button, PICKED_TAG)
+			UiKit.setLit(tab.button, tab.group == self.group)
 		end
 	end
 

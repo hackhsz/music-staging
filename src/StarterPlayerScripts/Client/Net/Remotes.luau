@@ -41,6 +41,7 @@ local USED_EVENTS = {
 	"ProfileSync",
 	"LeaderboardData",
 	"ClaimReward",
+	"ClaimPassTier",
 	"RedeemCode",
 	"TravelToIsland",
 	"ClaimStall",

@@ -11,10 +11,29 @@ place; until then everything sits under Unreleased.
 
 ### Changed
 
+- Robux purchases are granted on the server: dev products go through ProcessReceipt (each receipt granted once, saved before Roblox is told), and 2x Beat Coins and 2x XP passes now double song coins and XP. Sales go live per offer once its pass or product id is filled in `ShopCatalog`; VIP and the song pack stay coming soon.
+- The Stage Pass is sold as a one-season R$ 99 product: its shop card opens the Pass window, and the window's UNLOCK PASS button prompts the purchase.
+- The shop's Featured section leads with the Stage Set Road (Blooming Sky): six fixed looks bought in order, the first free, one already owned pays 100 coins instead. No random items.
+- Shop tabs follow the Miro board: FEATURED, OUTFITS, EMOTES, STAGES, PASSES, COINS; animation packs sit under Emotes, and bought passes and one-time offers read OWNED.
+- New squared button art (glossy purple, rounded-rectangle) on the lobby PLAY and SOLO PLAY, every stage-screen PLAY and CHALLENGE, Travel and Market; each has a pressed look and a greyed locked look, and the player card's `+` is purple instead of green. Art and asset ids live in the Encore UI Brief's `art` folder.
+- Menu windows share one new clean background (no tiled notes, no divider), the cyan picks and lime buttons are pink, the stray note stickers hanging off the windows are gone, and window titles are white-pink instead of mint.
+- Quests is redrawn with the new art: glossy row cards (a dimmed card once done), a square rank badge, a calmer rank strip and gold-rim reward boxes. Tabs in Quests, Wardrobe, Loadout and Settings use the new squared tab art.
+- The Shop is rebuilt to a clean mockup: no disco balls or ribbons behind items, calm card panels, purple squared buy buttons instead of green, pink tags and white headings.
+- 52 new icons replace the emoji placeholders: every shop offer and coin pack, every cosmetic, emote, pose and arena, and every ability (also on the in-run ability cards).
+- Every menu window's cards, rows and tiles spring in one after another when it opens, like the song picker; Reduced Motion skips it. Close buttons are bigger, title tabs no longer stretch oddly, buttons across Rewards, Group, Loadout, Wardrobe and Settings use the squared art, and the loud pink rows and cards are calmer.
+- Travel, Wardrobe, Rewards and Settings are rebuilt to mockups: Travel loses the leftover swoosh art and stray rail and gets a proper detail panel with a greyed YOU ARE HERE button; item and place cards use new resting, picked and locked card art; Wardrobe fills short lists with locked "GET MORE IN THE SHOP" slots and shows the avatar on a lit pedestal; the play-time gifts use the new icons; the code box is calm and the settings sliders are pink with round knobs.
+- The stage screens (setlist, song browser, rank road) drop the torn-paper look for the same window style as the menus: one framed window, calm song rows with thumbnails, new song covers and pink NEW chips. The run HUD, pause menu and results XP panel are restyled to match, and pause now draws above the HUD instead of under the combo. Window and panel rims are about half as thick.
+- The lobby rail, player card and SOLO PLAY slide away under the setlist, roadmap and song browser, and SOLO PLAY hides under menu windows, so nothing shows through them.
 - Lobby performance: the island's spinning quest icon, bobbing arrow and music rings now animate on each client instead of the server streaming their moves every frame; the unused Workspace copy of Music Ring (and its 3-minute song) is gone, the three animator scripts hunting for the old `Islands_9_3` island are deleted, and bouncy pads no longer print on every touch.
 
 ### Added
 
+- Stage Pass (Blooming Sky season, 4 weeks): every finished song that earns XP also earns 20 pass points, every 200 points is a tier, and each of 15 tiers has a free reward and a pass reward (coins or a cosmetic) you claim in the new Pass window, opened from the ticket button by the player card. The server checks every claim and saves the track; it resets when the season changes. The pass row stays locked ("coming soon") until Robux sales and pass ownership are built. Studio playtests: set the `StagePassPoints` number on Workspace to try tiers; live servers ignore it.
+- The stages roadmap (ALL STAGES) follows the rank road mockup: one squared panel with each stage's requirement and unlocks under its marker, then a rank-up song card, an XP-per-song table and a Next Goal card with a PLAY button for the song to play next. Song bests now also keep your best accuracy.
+
+### Fixed
+
+- Picking a tab in Quests, Wardrobe, Shop, Settings or the loadout now moves the highlight to it; before, the first tab stayed lit whichever one was open.
 - Floor charts come from a pattern library (`scripts/music/library.py`): 17 authored patterns (routes, either/or pairs, board zones, holds) make up about three quarters of each chart, generated bars on the beat fill the rest, and every step passes a reach rule against every tile you might be standing on. No danger tiles, claps, rushes, slides or items on these charts. Any-tile sets can now be up to 10 tiles. `chart-audio.py --generator walk` keeps the old floor.
 - Just a Little Static and Do You Read Me are recharted from the library on all four difficulties; each step carries its pattern id (`pid`).
 - Every target on the pad lights in the same pink (any-tile, hold and clap keep their icons); danger stays red.

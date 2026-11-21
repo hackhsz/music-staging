@@ -1,5 +1,4 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CosmeticsCatalog = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Catalogs"):WaitForChild("CosmeticsCatalog"))
@@ -13,9 +12,10 @@ local Colors = UiKit.Colors
 local WINDOW = "wardrobe"
 local DIMMED = 0.45
 -- A styled (Pill) tab or button shows it is picked, or is the thing to press, with this tag.
-local PICKED_TAG = "Primary"
 local EMPTY_NAME = "NOTHING HERE YET"
 local EMPTY_STATE = "GET ITEMS IN THE SHOP OR FROM QUESTS"
+local MIN_SLOTS = 8
+local EMPTY_SLOT_TEXT = "GET MORE IN THE SHOP"
 
 export type Item = {
 	kind: string,
@@ -63,11 +63,7 @@ WardrobePanel.__index = WardrobePanel
 export type WardrobePanel = typeof(setmetatable({} :: Fields, WardrobePanel))
 
 local function paintTag(button: GuiObject, on: boolean)
-	if on then
-		CollectionService:AddTag(button, PICKED_TAG)
-	else
-		CollectionService:RemoveTag(button, PICKED_TAG)
-	end
+	UiKit.setLit(button, on)
 end
 
 local function attribute(instance: Instance?, name: string): string?
@@ -263,7 +259,7 @@ function WardrobePanel._draw(self: WardrobePanel, keepId: string?)
 			self.picked = index
 			self:_drawDetail()
 		end)
-	end)
+	end, MIN_SLOTS, EMPTY_SLOT_TEXT)
 
 	self:_drawDetail()
 end

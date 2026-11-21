@@ -1,4 +1,5 @@
 --!strict
+local CollectionService = game:GetService("CollectionService")
 local GuiService = game:GetService("GuiService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -43,6 +44,16 @@ local SQUARE_TOLERANCE_PIXELS = 4
 local BUTTON_PRESS_SCALE = 0.92
 local BUTTON_HOVER_SECONDS = 0.14
 local BUTTON_PRESS_SECONDS = 0.06
+local DISABLED_TRANSPARENCY = 0.45
+local POP_IN_FROM = 0.6
+local POP_IN_SECONDS = 0.32
+local POP_IN_STAGGER = 0.035
+local POP_IN_LIMIT = 24
+local LIT_TAG = "Primary"
+local LIT_FILL = ColorSequence.new(Color3.fromRGB(255, 95, 225), Color3.fromRGB(185, 70, 255))
+local RESTING_FILL = ColorSequence.new(Color3.fromRGB(70, 30, 130), Color3.fromRGB(40, 14, 85))
+local LIT_STROKE = Color3.fromRGB(255, 199, 242)
+local RESTING_STROKE = Color3.fromRGB(210, 160, 255)
 -- Sweeping the pointer along a row of buttons ticks, but never as a buzz.
 local HOVER_SOUND_GAP_SECONDS = 0.05
 
@@ -245,6 +256,108 @@ function UiKit.setImage(target: GuiObject, image: string | ImageState)
 	target.Image = if tinted ~= nil then sprite.Tint else sprite.Image
 	target.ImageRectOffset = sprite.Offset
 	target.ImageRectSize = sprite.Size
+end
+
+-- Lights a picked tab or a ready button. The style sheet follows the tag, but the
+-- imported NeonFill and NeonStroke are set on the instance, so they are recoloured here.
+function UiKit.setLit(button: GuiObject, lit: boolean)
+	if lit then
+		CollectionService:AddTag(button, LIT_TAG)
+	else
+		CollectionService:RemoveTag(button, LIT_TAG)
+	end
+
+	local fill = button:FindFirstChild("NeonFill")
+	local stroke = button:FindFirstChild("NeonStroke")
+
+	if fill ~= nil and fill:IsA("UIGradient") and fill.Enabled then
+		fill.Color = if lit then LIT_FILL else RESTING_FILL
+	end
+
+	if stroke ~= nil and stroke:IsA("UIStroke") and stroke.Enabled then
+		stroke.Color = if lit then LIT_STROKE else RESTING_STROKE
+	end
+
+	local skin = button:FindFirstChild("Skin")
+	local litImage = button:GetAttribute("LitImage")
+	local restingImage = button:GetAttribute("RestingImage")
+
+	if skin ~= nil and skin:IsA("ImageLabel") and typeof(litImage) == "string" and typeof(restingImage) == "string" then
+		skin.Image = if lit then litImage else restingImage
+	end
+end
+
+local function laidOutItems(root: Instance): { GuiObject }
+	local items: { GuiObject } = {}
+
+	for _, child in root:GetDescendants() do
+		local parent = child.Parent
+
+		if
+			child:IsA("GuiObject")
+			and child.Visible
+			and parent ~= nil
+			and (parent:FindFirstChildOfClass("UIGridLayout") ~= nil or parent:FindFirstChildOfClass("UIListLayout") ~= nil)
+			and string.sub(child.Name, -8) ~= "Template"
+			and child.AbsoluteSize.X > 0
+		then
+			table.insert(items, child)
+		end
+	end
+
+	table.sort(items, function(a, b)
+		local pa, pb = a.AbsolutePosition, b.AbsolutePosition
+
+		return if math.abs(pa.Y - pb.Y) > 4 then pa.Y < pb.Y else pa.X < pb.X
+	end)
+
+	return items
+end
+
+-- The song picker's entrance for any window: the cards and rows in its lists spring in
+-- one after another. Drives the same Pop scale the hover uses, ending at rest.
+function UiKit.popIn(root: Instance)
+	if GuiService.ReducedMotionEnabled then
+		return
+	end
+
+	for index, item in laidOutItems(root) do
+		if index > POP_IN_LIMIT then
+			break
+		end
+
+		local scale = UiKit.scaleOf(item, "Pop")
+
+		if item:FindFirstChildOfClass("UIScale") ~= scale then
+			continue
+		end
+
+		scale.Scale = POP_IN_FROM
+		TweenService:Create(
+			scale,
+			TweenInfo.new(POP_IN_SECONDS, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, (index - 1) * POP_IN_STAGGER),
+			{ Scale = 1 }
+		):Play()
+	end
+end
+
+-- A button authored with a DisabledImage attribute swaps to that art while it is off;
+-- without one it is dimmed instead.
+function UiKit.setButtonEnabled(button: ImageButton, enabled: boolean)
+	local disabled = button:GetAttribute("DisabledImage")
+
+	if typeof(disabled) ~= "string" then
+		button.ImageTransparency = if enabled then 0 else DISABLED_TRANSPARENCY
+		return
+	end
+
+	if button:GetAttribute("IdleImage") == nil then
+		button:SetAttribute("IdleImage", button.Image)
+	end
+
+	button.Image = if enabled then button:GetAttribute("IdleImage") :: string else disabled
+	button.Active = enabled
+	button.AutoButtonColor = enabled
 end
 
 function UiKit.scaleOf(gui: Instance, name: string?): UIScale

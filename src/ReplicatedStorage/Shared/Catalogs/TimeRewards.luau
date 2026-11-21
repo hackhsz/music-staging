@@ -10,14 +10,14 @@ local TimeRewards = {}
 TimeRewards.RewardPrefix = "time:"
 
 TimeRewards.Tiers = {
-	{ id = "t5", icon = "Icon_Coin", minutes = 5, coins = 25, glyph = "💵" },
-	{ id = "t10", icon = "Icon_CoinStack", minutes = 10, coins = 40, glyph = "💸" },
-	{ id = "t15", icon = "Icon_Wand", minutes = 15, coins = 60, glyph = "✨", cosmeticId = "mint-wand-001" },
-	{ id = "t20", icon = "Icon_CoinStack", minutes = 20, coins = 75, glyph = "💰" },
-	{ id = "t30", icon = "Icon_Trail", minutes = 30, coins = 125, glyph = "🎶", cosmeticId = "trail-equalizer-001" },
-	{ id = "t45", icon = "Icon_Gift", minutes = 45, coins = 150, glyph = "🎁" },
-	{ id = "t60", icon = "Icon_Wand", minutes = 60, coins = 200, glyph = "🌅", cosmeticId = "sunset-wand-001" },
-	{ id = "t90", icon = "Icon_Wand", minutes = 90, coins = 400, glyph = "🌙", cosmeticId = "midnight-wand-001" },
+	{ id = "t5", icon = "rbxassetid://90381087302472", minutes = 5, coins = 25, glyph = "💵" },
+	{ id = "t10", icon = "rbxassetid://121968853135819", minutes = 10, coins = 40, glyph = "💸" },
+	{ id = "t15", icon = "rbxassetid://88346308866310", minutes = 15, coins = 60, glyph = "✨", cosmeticId = "mint-wand-001" },
+	{ id = "t20", icon = "rbxassetid://73967585210718", minutes = 20, coins = 75, glyph = "💰" },
+	{ id = "t30", icon = "rbxassetid://74188477340816", minutes = 30, coins = 125, glyph = "🎶", cosmeticId = "trail-equalizer-001" },
+	{ id = "t45", icon = "rbxassetid://70793384037603", minutes = 45, coins = 150, glyph = "🎁" },
+	{ id = "t60", icon = "rbxassetid://113521260792395", minutes = 60, coins = 200, glyph = "🌅", cosmeticId = "sunset-wand-001" },
+	{ id = "t90", icon = "rbxassetid://112873657749069", minutes = 90, coins = 400, glyph = "🌙", cosmeticId = "midnight-wand-001" },
 } :: { Tier }
 
 -- The tier a ClaimReward id names ("time:t5"), or nil.

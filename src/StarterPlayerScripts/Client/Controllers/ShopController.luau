@@ -11,6 +11,10 @@ local Remotes = require(script.Parent.Parent.Net.Remotes)
 local Telemetry = require(script.Parent.Parent.Net.Telemetry)
 
 local COMING_SOON_HINT = "COMING SOON - ROBUX SALES OPEN AT LAUNCH"
+local SET_ROAD_DONE = "SET COMPLETE"
+local STEP_DONE_MARK = "✓ "
+local STEP_NEXT_MARK = "▶ "
+local STEP_LATER_MARK = "· "
 local PURCHASE_HINTS = {
 	purchased = "PURCHASED!",
 	claimed = "REWARD CLAIMED!",
@@ -31,6 +35,7 @@ type Deps = {
 	remotes: Remotes.Remotes,
 	hud: HUDController.HUDController,
 	sfx: any,
+	openPass: () -> (),
 }
 
 type Fields = {
@@ -110,8 +115,24 @@ function ShopController._setBalance(self: ShopController, amount: number?)
 	self.deps.hud.shop:updateBalance(amount)
 end
 
+-- Whether the player already has what a Robux offer sells, from the server's profile.
+local function ownsOffer(profile: any, offer: any): boolean
+	if profile == nil then
+		return false
+	end
+
+	if offer.grants ~= nil and offer.grants.stagePass == true then
+		return type(profile.stagePass) == "table" and profile.stagePass.passOwned == true
+	end
+
+	local passes = profile.passes or {}
+	local bought = profile.boughtOffers or {}
+
+	return passes[offer.id] == true or (offer.oneTime == true and bought[offer.id] == true)
+end
+
 -- A Robux offer's shop row; kind is "pass", "bundle" or "coin_pack".
-local function robuxEntry(offer: any, kind: string): any
+local function robuxEntry(offer: any, kind: string, profile: any?): any
 	local marketId = if kind == "pass" then offer.passId else offer.productId
 
 	return {
@@ -136,7 +157,45 @@ local function robuxEntry(offer: any, kind: string): any
 		coins = offer.coins,
 		bonus = offer.bonus,
 		stateText = if offer.oneTime == true then "ONE-TIME OFFER" elseif kind == "pass" then "YOURS FOREVER" else "",
-		comingSoon = not ShopCatalog.RobuxSalesOpen or marketId == nil,
+		owned = ownsOffer(profile, offer),
+		opensPass = offer.opensPass,
+		comingSoon = offer.comingSoon == true or not ShopCatalog.RobuxSalesOpen or marketId == nil,
+	}
+end
+
+-- The Set Road as one hero banner: its next step to buy, with every step listed and
+-- the ones already taken ticked.
+local function setRoadEntry(profile: any?): any
+	local road = ShopCatalog.SetRoad
+	local taken = if profile ~= nil and type(profile.setRoad) == "table" then profile.setRoad.step or 0 else 0
+	local nextStep = road.steps[taken + 1]
+	local lines = {}
+
+	for index, step in road.steps do
+		local item = CosmeticsCatalog.getItem(step.cosmeticId)
+		local mark = if index <= taken then STEP_DONE_MARK elseif index == taken + 1 then STEP_NEXT_MARK else STEP_LATER_MARK
+		local price = if step.robux == 0 then "FREE" else ("R$ %d"):format(step.robux)
+
+		table.insert(lines, ("%s%s  %s"):format(mark, if item ~= nil then item.displayName else step.cosmeticId, price))
+	end
+
+	local nextItem = if nextStep ~= nil then CosmeticsCatalog.getItem(nextStep.cosmeticId) else nil
+
+	return {
+		kind = "set_road",
+		id = road.id,
+		hero = true,
+		step = taken + 1,
+		marketId = if nextStep ~= nil then nextStep.productId else nil,
+		displayName = ("%s · STEP %d OF %d"):format(string.upper(road.displayName), math.min(taken + 1, #road.steps), #road.steps),
+		icon = if nextItem ~= nil then nextItem.icon else road.icon,
+		glyph = if nextItem ~= nil then nextItem.glyph else nil,
+		badge = string.upper(road.subtitle),
+		includes = lines,
+		robux = if nextStep ~= nil then nextStep.robux else nil,
+		owned = nextStep == nil,
+		ownedText = SET_ROAD_DONE,
+		comingSoon = nextStep ~= nil and nextStep.robux > 0 and (not ShopCatalog.RobuxSalesOpen or nextStep.productId == nil),
 	}
 end
 
@@ -153,11 +212,15 @@ function ShopController._buildSections(self: ShopController): { any }
 	for _, section in ShopCatalog.Sections do
 		local entries: { any } = {}
 
+		if section.setRoad == true then
+			table.insert(entries, setRoadEntry(profile))
+		end
+
 		for _, offerId in section.offers or {} do
 			local offer = ShopCatalog.getOffer(offerId)
 
 			if offer ~= nil then
-				table.insert(entries, robuxEntry(offer, offer.kind))
+				table.insert(entries, robuxEntry(offer, offer.kind, profile))
 			end
 		end
 
@@ -246,7 +309,7 @@ function ShopController._buildSections(self: ShopController): { any }
 	local packEntries: { any } = {}
 
 	for _, pack in ShopCatalog.CoinPacks do
-		table.insert(packEntries, robuxEntry(pack, "coin_pack"))
+		table.insert(packEntries, robuxEntry(pack, "coin_pack", profile))
 	end
 
 	table.insert(sections, {
@@ -264,6 +327,16 @@ function ShopController._onItemActivated(self: ShopController, entry: any)
 	if entry.kind == "song" then
 		deps.remotes.PurchaseSong:FireServer({ songId = entry.id })
 		Telemetry.track("song_purchase_requested", entry.id)
+		return
+	end
+
+	if entry.opensPass == true then
+		deps.openPass()
+		return
+	end
+
+	if entry.kind == "set_road" and entry.robux == 0 then
+		deps.remotes.ClaimReward:FireServer({ rewardId = ShopCatalog.SetRoad.freeRewardId })
 		return
 	end
 

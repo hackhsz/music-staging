@@ -286,11 +286,11 @@ function StagePanels._bindButtons(self: StagePanels)
 	bind(self.roadmap, "CloseButton", function()
 		self:closeRoadmap()
 	end)
-	bind(self.roadmap, "Hero.PlayButton", function()
-		self:closeRoadmap()
+	bind(self.roadmap, "Goal.PlayButton", function()
+		local goal = if self.snapshot ~= nil then self.snapshot.nextGoal else nil
 
-		if self.onSetlist ~= nil then
-			self.onSetlist()
+		if goal ~= nil then
+			self:_play(goal.chartId)
 		end
 	end)
 	bind(self.roadmap, "Hero.ChallengeButton", function()
@@ -641,19 +641,21 @@ function StagePanels._renderRoadmap(self: StagePanels)
 	local fill = UiKit.authored(hero, "XpBar.Fill", "GuiObject")
 	local share = if snapshot.threshold ~= nil then snapshot.xp / math.max(snapshot.threshold, 1) else 1
 
-	setText(hero, "TitleLabel", ("STAGE %d · %s"):format(snapshot.rank, tostring(snapshot.name)))
+	local following = stages[snapshot.rank + 1]
+
 	setText(
-		hero,
-		"XpLabel",
-		if snapshot.threshold ~= nil
-			then ("%s / %s XP"):format(withCommas(snapshot.xp), withCommas(snapshot.threshold))
-			else ("%s XP"):format(withCommas(snapshot.xp))
+		roadmap,
+		"SubLabel",
+		if snapshot.threshold ~= nil and following ~= nil
+			then ("%s / %s XP TO %s"):format(withCommas(snapshot.xp), withCommas(snapshot.threshold), tostring(following.name))
+			else "TOP STAGE REACHED"
 	)
-	setText(hero, "Line2", ("SETLIST: %d / %d CLEARED"):format(snapshot.cleared, #snapshot.rows))
+	setText(hero, "TitleLabel", if challenger ~= nil then string.upper(challenger.songTitle) else "TOP STAGE")
 	setVisible(hero, "ToGoLabel", challenger ~= nil)
 	setVisible(hero, "Line1", challenger ~= nil)
-	setVisible(hero, "Line3", challenger ~= nil)
 	setVisible(hero, "NameTag", challenger ~= nil)
+	setVisible(hero, "XpBar", challenger ~= nil)
+	setVisible(hero, "RetryTag", challenger ~= nil)
 	setPortrait(hero, "Portrait", if challenger ~= nil then challenger.name else nil)
 	setVisible(hero, "ChallengeButton", challenger ~= nil)
 
@@ -663,27 +665,26 @@ function StagePanels._renderRoadmap(self: StagePanels)
 
 	if challenger ~= nil then
 		local ready = challenger.state ~= "PRACTICE"
+		local button = UiKit.authored(hero, "ChallengeButton", "ImageButton")
 
 		setText(hero, "NameTag", ("%s · CHALLENGER"):format(challenger.name))
-		setText(hero, "ToGoLabel", if ready then ("%s READY"):format(challenger.name) else ("%s XP TO CHALLENGE"):format(withCommas(snapshot.toChallenge)))
+		setText(hero, "Line1", ("%s · GRADE %s · TARGET %s"):format(challenger.difficulty, challenger.needGrade, scoreText(challenger.target)))
 		setText(
 			hero,
-			"Line1",
-			("CHALLENGER: %s · %s · %s · GRADE %s · TARGET %s"):format(
-				challenger.name,
-				challenger.songTitle,
-				challenger.difficulty,
-				challenger.needGrade,
-				scoreText(challenger.target)
-			)
+			"ToGoLabel",
+			if ready
+				then ("%s IS READY"):format(challenger.name)
+				else ("OPENS AT %s XP · %s TO GO"):format(withCommas(snapshot.threshold or 0), withCommas(snapshot.toChallenge))
 		)
-		setText(hero, "Line3", ("STAGE %d OPENS: %s"):format(snapshot.rank + 1, table.concat(snapshot.nextOpens, " · ")))
-		setText(
-			hero,
-			"ChallengeButton.Label",
-			if ready then ("CHALLENGE %s"):format(challenger.name) else ("CHALLENGE · %s XP"):format(withCommas(snapshot.toChallenge))
-		)
+		setText(hero, "ChallengeButton.Label", if ready then ("CHALLENGE %s"):format(challenger.name) else "LOCKED")
+
+		if button ~= nil then
+			UiKit.setButtonEnabled(button, ready)
+		end
 	end
+
+	self:_renderXpRules(snapshot.xpRules)
+	self:_renderGoal(snapshot.nextGoal)
 
 	local last = math.min(#stages, MAX_ROADMAP_STAGES)
 	local track = UiKit.authored(path, "Track", "GuiObject")
@@ -725,9 +726,35 @@ function StagePanels._renderRoadmap(self: StagePanels)
 		setVisible(node, "LockTag", stage.state == "locked")
 		setText(node, "LockTag", ("%s XP"):format(withCommas(stage.xp)))
 		setText(card, "TitleLabel", tostring(stage.name))
-		setText(card, "SetLabel", ("%d CHARTS"):format(#stage.charts))
-		setText(card, "UnlockLabel", tostring(stage.opens[1] or ""))
+		setText(card, "SetHeader", if stage.need ~= "" then tostring(stage.need) else "START")
+		setText(card, "SetLabel", table.concat(stage.opens, " · "))
 	end
+end
+
+function StagePanels._renderXpRules(self: StagePanels, rules: any)
+	local panel = UiKit.authored(self.roadmap, "XpRules", "GuiObject")
+
+	if panel == nil or type(rules) ~= "table" then
+		return
+	end
+
+	local grades = rules.grades or {}
+
+	setText(panel, "Row1.Value", ("+%d"):format(rules.finish))
+	setText(panel, "Row2.Value", ("+%d · %d · %d · %d"):format(grades.S or 0, grades.A or 0, grades.B or 0, grades.C or 0))
+	setText(panel, "Row3.Value", ("+%d"):format(rules.first))
+	setText(panel, "Row4.Value", ("+%d"):format(rules.friend))
+	setText(panel, "Row5.Value", ("×%d"):format(rules.todayMultiplier))
+end
+
+function StagePanels._renderGoal(self: StagePanels, goal: any)
+	local panel = UiKit.authored(self.roadmap, "Goal", "GuiObject")
+
+	setText(panel, "Headline", if goal ~= nil then tostring(goal.headline) else "EVERY SONG AT S")
+	setText(panel, "Detail", if goal ~= nil then tostring(goal.detail) else "NOTHING LEFT ON THIS STAGE")
+	setText(panel, "Badge", if goal ~= nil and goal.grade ~= nil then tostring(goal.grade) else "")
+	setVisible(panel, "Badge", goal ~= nil and goal.grade ~= nil)
+	setVisible(panel, "PlayButton", goal ~= nil)
 end
 
 -- The card between pressing a challenger's chart and starting it.

@@ -1,5 +1,4 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
@@ -12,7 +11,6 @@ local UiKit = require(script.Parent.Parent.UiKit)
 local WINDOW = "settings"
 local PAGE_SUFFIX = "Page"
 -- A styled (Pill) button shows it is picked or on with this tag.
-local PICKED_TAG = "Primary"
 local ROW_TEMPLATES =
 	{ slider = "SliderRow", toggle = "ToggleRow", choice = "ChoiceRow", key = "KeyRow", button = "KeyRow" }
 local ABOUT_DEFAULT = "Changes save as you make them."
@@ -311,10 +309,8 @@ function SettingsPanel._paintPicked(self: SettingsPanel, button: GuiObject, pick
 
 	if image ~= nil and button:IsA("ImageButton") then
 		UiKit.setImage(button, image)
-	elseif picked then
-		CollectionService:AddTag(button, PICKED_TAG)
 	else
-		CollectionService:RemoveTag(button, PICKED_TAG)
+		UiKit.setLit(button, picked)
 	end
 end
 

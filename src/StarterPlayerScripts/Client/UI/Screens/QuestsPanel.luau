@@ -1,5 +1,4 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
 
 local MenuScreen = require(script.Parent.MenuScreen)
@@ -12,7 +11,6 @@ local DONE_TRANSPARENCY = 0.45
 local DONE_TAG = "Done"
 local ROW_GAP = 8
 -- A styled (Pill) tab shows it is picked with this tag.
-local PICKED_TAG = "Primary"
 local FILL_TWEEN = TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 export type Quest = {
@@ -167,10 +165,8 @@ function QuestsPanel._draw(self: QuestsPanel)
 
 		if image ~= nil and tab.button:IsA("ImageButton") then
 			UiKit.setImage(tab.button, image)
-		elseif tab.key == self.tab then
-			CollectionService:AddTag(tab.button, PICKED_TAG)
 		else
-			CollectionService:RemoveTag(tab.button, PICKED_TAG)
+			UiKit.setLit(tab.button, tab.key == self.tab)
 		end
 
 		self:_drawCount(tab)
@@ -263,6 +259,12 @@ function QuestsPanel._fillRow(_self: QuestsPanel, row: GuiObject, quest: Quest)
 
 	if quest.done then
 		row:AddTag(DONE_TAG)
+	end
+
+	local doneImage = row:GetAttribute("DoneImage")
+
+	if quest.done and typeof(doneImage) == "string" and row:IsA("ImageLabel") then
+		row.Image = doneImage
 	end
 
 	local doneColor = if progress ~= nil then progress:GetAttribute("DoneColor") else nil

@@ -16,6 +16,7 @@ local PlayerSettings = require(Shared:WaitForChild("PlayerSettings"))
 local Services = script.Parent:WaitForChild("Services")
 local PlayerDataService = require(Services:WaitForChild("PlayerDataService"))
 local RewardService = require(Services:WaitForChild("RewardService"))
+local PurchaseService = require(Services:WaitForChild("PurchaseService"))
 local InventoryService = require(Services:WaitForChild("InventoryService"))
 local LeaderboardService = require(Services:WaitForChild("LeaderboardService"))
 local LeaderstatsService = require(Services:WaitForChild("LeaderstatsService"))
@@ -31,6 +32,7 @@ local StallService = require(Services:WaitForChild("StallService"))
 
 local remotes = ReplicatedStorage:WaitForChild(RemoteContract.FolderName)
 local claimRewardRemote = remotes:WaitForChild(RemoteContract.Events.ClaimReward.name)
+local claimPassTierRemote = remotes:WaitForChild(RemoteContract.Events.ClaimPassTier.name)
 local equipCosmeticRemote = remotes:WaitForChild(RemoteContract.Events.EquipCosmetic.name)
 local unequipCosmeticRemote = remotes:WaitForChild(RemoteContract.Events.UnequipCosmetic.name)
 local multiplayerStatusRemote = remotes:WaitForChild(RemoteContract.Events.MultiplayerStatus.name)
@@ -67,6 +69,7 @@ local stallResultRemote = remotes:WaitForChild(RemoteContract.Events.StallResult
 
 local playerDataService = PlayerDataService.new()
 local rewardService = RewardService.new(playerDataService)
+local purchaseService = PurchaseService.new(playerDataService, rewardService)
 local inventoryService = InventoryService.new(playerDataService)
 local leaderboardService = LeaderboardService.new()
 local leaderstatsService = LeaderstatsService.new(playerDataService)
@@ -104,6 +107,7 @@ Backend.Codes = codeService
 Backend.Funnels = funnelService
 Backend.Onboarding = onboardingService
 Backend.Stalls = stallService
+Backend.Purchases = purchaseService
 
 -- RhythmService replaces this once it starts; it alone knows who is mid-run.
 function Backend.isInRun(_player: Player): boolean
@@ -159,6 +163,10 @@ local function buildProfileSnapshot(player: Player)
 		stages = RankCatalog.stages(profile, DailyChallenges.dayKey(os.time())),
 		daily = buildDailySnapshot(profile),
 		timeRewards = rewardService:visitSnapshot(player),
+		stagePass = rewardService:stagePassSnapshot(player),
+		passes = profile.passes,
+		boughtOffers = profile.boughtOffers,
+		setRoad = rewardService:setRoadSnapshot(player),
 	}
 end
 
@@ -276,6 +284,7 @@ end
 local function onPlayerAdded(player: Player)
 	playerDataService:load(player)
 	rewardService:startVisit(player)
+	task.spawn(purchaseService.refreshPasses, purchaseService, player)
 
 	if player.Parent == Players then
 		leaderstatsService:add(player)
@@ -364,6 +373,37 @@ claimRewardRemote.OnServerEvent:Connect(function(player, payload)
 		ok = ok,
 		kind = "reward",
 		itemId = payload.rewardId,
+		reason = reason,
+		softCurrency = profile ~= nil and profile.softCurrency or 0,
+		reward = reward,
+	})
+
+	if ok then
+		Backend.syncProfile(player)
+	end
+end)
+
+claimPassTierRemote.OnServerEvent:Connect(function(player, payload)
+	if not rateLimiter:allow(player, "ClaimPassTier", RemoteContract.Events.ClaimPassTier.rateLimitPerSecond) then
+		return
+	end
+
+	if type(payload) ~= "table" or type(payload.tier) ~= "number" or type(payload.row) ~= "string" then
+		return
+	end
+
+	-- NaN and infinity are numbers too, and would break the tier lookup and the reply.
+	if payload.tier ~= payload.tier or math.abs(payload.tier) == math.huge then
+		return
+	end
+
+	local ok, reason, reward = rewardService:claimPassTier(player, math.floor(payload.tier), payload.row)
+	local profile = playerDataService:get(player)
+
+	purchaseResultRemote:FireClient(player, {
+		ok = ok,
+		kind = "pass",
+		itemId = ("%s:%d"):format(payload.row, math.floor(payload.tier)),
 		reason = reason,
 		softCurrency = profile ~= nil and profile.softCurrency or 0,
 		reward = reward,
@@ -740,6 +780,20 @@ buyListingRemote.OnServerEvent:Connect(function(player, payload)
 		stallService:reply(player, ok, reason, payload.assetId)
 	end
 end)
+
+purchaseService.onGranted = function(player: Player, itemId: string)
+	local profile = playerDataService:get(player)
+
+	purchaseResultRemote:FireClient(player, {
+		ok = true,
+		kind = "robux",
+		itemId = itemId,
+		reason = "purchased",
+		softCurrency = if profile ~= nil then profile.softCurrency else 0,
+	})
+	Backend.syncProfile(player)
+end
+purchaseService:start()
 
 MarketplaceService.PromptPurchaseFinished:Connect(function(player, assetId, purchased)
 	stallService:onPurchaseFinished(player, assetId, purchased)

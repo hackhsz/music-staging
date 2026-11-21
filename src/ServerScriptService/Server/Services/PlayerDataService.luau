@@ -61,6 +61,14 @@ local DEFAULT_PROFILE = {
 	},
 	abilityLoadout = table.clone(AbilityCatalog.DefaultLoadout),
 	claimedRewards = {},
+	stagePass = { season = "", points = 0, claimedFree = {}, claimedPass = {}, passOwned = false },
+	-- ShopCatalog game pass offers the player owns, by offer id.
+	passes = {},
+	-- One-time Robux offers already bought, by offer id.
+	boughtOffers = {},
+	-- Developer product receipts already granted: PurchaseId to the time granted.
+	receipts = {},
+	setRoad = { season = "", step = 0, freeClaimed = false },
 	rewardCooldowns = {},
 	redeemedCodes = {},
 	daily = {
@@ -270,10 +278,12 @@ function PlayerDataService:markDirty(player: Player)
 	end
 end
 
-function PlayerDataService:save(player: Player)
+-- force writes even when the profile looks clean: an autosave already in flight clears the dirty
+-- flag when it lands, though its write may have been taken before the newest change.
+function PlayerDataService:save(player: Player, force: boolean?)
 	local profile = self.profiles[player]
 
-	if profile == nil or not self.dirty[player] then
+	if profile == nil or (not self.dirty[player] and not force) then
 		return true
 	end
 

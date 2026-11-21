@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -11,6 +12,9 @@ local AchievementCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild(
 local EasterEggs = require(Shared:WaitForChild("Catalogs"):WaitForChild("EasterEggs"))
 local SocialRewards = require(Shared:WaitForChild("Catalogs"):WaitForChild("SocialRewards"))
 local TimeRewards = require(Shared:WaitForChild("Catalogs"):WaitForChild("TimeRewards"))
+local StagePassCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("StagePassCatalog"))
+local CosmeticsCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("CosmeticsCatalog"))
+local ShopCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("ShopCatalog"))
 local ScoreSummary = require(Shared:WaitForChild("ScoreSummary"))
 
 local RewardService = {}
@@ -18,6 +22,12 @@ RewardService.__index = RewardService
 
 local GROUP_ACTION_ID = "community"
 local NEXT_GOAL_MAX_PERFECTS = 5
+-- Studio playtests start from a fresh profile; this Workspace number lifts the pass points so
+-- tiers can be tried. Live servers ignore it.
+local STUDIO_PASS_POINTS_ATTRIBUTE = "StagePassPoints"
+local DOUBLE_COINS_PASS = "double-coins"
+local DOUBLE_XP_PASS = "double-xp"
+local PERK_MULTIPLIER = 2
 
 -- Whether the player is in the community group; false while no group is set or
 -- when Roblox cannot answer.
@@ -207,10 +217,12 @@ function RewardService:applySongSummary(player: Player, summary: any)
 	end
 
 	local rewards = {}
-	profile.softCurrency += Economy.Rewards.SongComplete
+	local songCoins = Economy.Rewards.SongComplete
+		* (if profile.passes[DOUBLE_COINS_PASS] == true then PERK_MULTIPLIER else 1)
+	profile.softCurrency += songCoins
 	table.insert(rewards, {
 		type = "soft_currency",
-		amount = Economy.Rewards.SongComplete,
+		amount = songCoins,
 		reason = "song_complete",
 	})
 
@@ -290,6 +302,10 @@ function RewardService:applySongSummary(player: Player, summary: any)
 		rank = rankBefore,
 	})
 
+	if profile.passes[DOUBLE_XP_PASS] == true then
+		xpGained *= PERK_MULTIPLIER
+	end
+
 	if xpGained > 0 then
 		profile.lastXpBonusDay = today
 		profile.stats.songBests[songId].finished = true
@@ -301,6 +317,15 @@ function RewardService:applySongSummary(player: Player, summary: any)
 		amount = xpGained,
 		reason = "song_complete",
 	})
+
+	-- Pass points follow XP: a run that earned none (failed, under 30%) earns no points either.
+	if xpGained > 0 then
+		local pass = StagePassCatalog.normalize(profile.stagePass)
+
+		pass.points += StagePassCatalog.PointsPerSong
+		profile.stagePass = pass
+		table.insert(rewards, { type = "pass_points", amount = StagePassCatalog.PointsPerSong, reason = "song_complete" })
+	end
 
 	local rankedUp = summary.flagged ~= true and RankCatalog.passesRankUp(rankBefore, xpBefore, summary)
 
@@ -385,6 +410,10 @@ function RewardService:claimReward(player: Player, rewardId: string, now: number
 		return false, "profile_not_loaded", nil
 	end
 
+	if rewardId == ShopCatalog.SetRoad.freeRewardId then
+		return self:_claimFreeSetRoadStep(player, profile)
+	end
+
 	local tier = TimeRewards.fromRewardId(rewardId)
 
 	if tier ~= nil then
@@ -457,6 +486,131 @@ function RewardService:claimReward(player: Player, rewardId: string, now: number
 		itemId = if item ~= nil then item.id else socialAction.id,
 		softCurrency = profile.softCurrency,
 	}
+end
+
+function RewardService:stagePassSnapshot(player: Player): { [string]: any }?
+	local profile = self.playerDataService:get(player)
+
+	if profile == nil then
+		return nil
+	end
+
+	profile.stagePass = StagePassCatalog.normalize(profile.stagePass)
+
+	local studioPoints = Workspace:GetAttribute(STUDIO_PASS_POINTS_ATTRIBUTE)
+
+	if RunService:IsStudio() and type(studioPoints) == "number" then
+		profile.stagePass.points = math.max(profile.stagePass.points, studioPoints)
+	end
+
+	return StagePassCatalog.snapshot(profile.stagePass, os.time())
+end
+
+-- Hands over one tier's free or pass reward. The server checks the tier is reached, the
+-- pass is owned for the pass row, and the reward was not taken before.
+function RewardService:claimPassTier(player: Player, tier: number, row: string)
+	local profile = self.playerDataService:get(player)
+
+	if profile == nil then
+		return false, "profile_not_loaded", nil
+	end
+
+	local pass = StagePassCatalog.normalize(profile.stagePass)
+	profile.stagePass = pass
+
+	local problem = StagePassCatalog.claimProblem(pass, tier, row)
+
+	if problem ~= nil then
+		return false, problem, nil
+	end
+
+	local reward = StagePassCatalog.Tiers[tier][row]
+
+	if reward.kind == "coins" then
+		profile.softCurrency = (profile.softCurrency or 0) + (reward.amount or 0)
+	elseif reward.kind == "cosmetic" and reward.cosmeticId ~= nil and CosmeticsCatalog.getItem(reward.cosmeticId) ~= nil then
+		profile.cosmetics[reward.cosmeticId] = true
+	else
+		return false, "unknown_reward", nil
+	end
+
+	local claimed = if row == "free" then pass.claimedFree else pass.claimedPass
+	claimed[tostring(tier)] = true
+	self.playerDataService:markDirty(player)
+
+	return true, nil, reward
+end
+
+function RewardService:unlockStagePass(player: Player)
+	local profile = self.playerDataService:get(player)
+
+	if profile == nil then
+		return
+	end
+
+	profile.stagePass = StagePassCatalog.normalize(profile.stagePass)
+	profile.stagePass.passOwned = true
+	self.playerDataService:markDirty(player)
+end
+
+local function currentSetRoad(profile: any): { season: string, step: number, freeClaimed: boolean }
+	local road = profile.setRoad
+
+	if type(road) ~= "table" or road.season ~= ShopCatalog.SetRoad.season then
+		road = { season = ShopCatalog.SetRoad.season, step = 0, freeClaimed = false }
+		profile.setRoad = road
+	end
+
+	return road
+end
+
+-- Hands over one Set Road step. A paid step is always granted, even out of order, because
+-- the player has already paid; a look they own pays coins instead.
+function RewardService:grantSetRoadStep(player: Player, step: number)
+	local profile = self.playerDataService:get(player)
+	local entry = ShopCatalog.SetRoad.steps[step]
+
+	if profile == nil or entry == nil then
+		return nil
+	end
+
+	local road = currentSetRoad(profile)
+	local reward
+
+	if profile.cosmetics[entry.cosmeticId] == true then
+		profile.softCurrency += ShopCatalog.SetRoad.ownedRefund
+		reward = { type = "soft_currency", amount = ShopCatalog.SetRoad.ownedRefund, reason = "set_road_owned" }
+	else
+		profile.cosmetics[entry.cosmeticId] = true
+		reward = { type = "cosmetic", cosmeticId = entry.cosmeticId, reason = "set_road" }
+	end
+
+	road.step = math.max(road.step, step)
+	self.playerDataService:markDirty(player)
+
+	return reward
+end
+
+function RewardService:_claimFreeSetRoadStep(player: Player, profile: any)
+	local road = currentSetRoad(profile)
+
+	if road.freeClaimed == true then
+		return false, "already_claimed", nil
+	end
+
+	road.freeClaimed = true
+
+	return true, "claimed", self:grantSetRoadStep(player, 1)
+end
+
+function RewardService:setRoadSnapshot(player: Player): { [string]: any }?
+	local profile = self.playerDataService:get(player)
+
+	if profile == nil then
+		return nil
+	end
+
+	return { season = ShopCatalog.SetRoad.season, step = currentSetRoad(profile).step }
 end
 
 return RewardService

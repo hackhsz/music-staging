@@ -1,5 +1,4 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -13,7 +12,6 @@ local Colors = UiKit.Colors
 
 local WINDOW = "shop"
 -- A styled (Pill) tab or buy button shows it is picked, or can be bought, with this tag.
-local PICKED_TAG = "Primary"
 -- Sections drawn as Robux offers; every other section is a grid of item cards.
 local OFFER_SECTIONS = { featured = true, passes = true, coin_packs = true }
 -- Rarities worth a star on the card.
@@ -112,11 +110,7 @@ local function actionFor(entry: any): (string, boolean)
 end
 
 local function paintTag(button: GuiObject, on: boolean)
-	if on then
-		CollectionService:AddTag(button, PICKED_TAG)
-	else
-		CollectionService:RemoveTag(button, PICKED_TAG)
-	end
+	UiKit.setLit(button, on)
 end
 
 function ShopPanel.new(menu: MenuScreen.MenuScreen): ShopPanel

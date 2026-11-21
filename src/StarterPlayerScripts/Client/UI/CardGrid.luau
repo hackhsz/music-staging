@@ -5,6 +5,7 @@ local CARDS_PER_ROW = 4
 local ROW_GAP = 6
 local PICKED_TINT = Color3.fromRGB(255, 170, 255)
 local RESTING_TINT = Color3.new(1, 1, 1)
+local EMPTY_TEXT_TRANSPARENCY = 0.35
 
 type Fields = {
 	list: ScrollingFrame?,
@@ -36,7 +37,40 @@ function CardGrid.new(list: ScrollingFrame?, template: GuiObject?): CardGrid
 	return self
 end
 
-function CardGrid.build(self: CardGrid, count: number, fill: (card: GuiButton, index: number) -> ())
+-- A card with no item, kept so a short list still reads as a grid: drawn with the card's
+-- LockedImage art when it has one, and only the name line left, saying emptyText.
+local function showEmpty(card: GuiButton, emptyText: string?)
+	local locked = card:GetAttribute("LockedImage")
+
+	card.Active = false
+	card.AutoButtonColor = false
+
+	if card:IsA("ImageButton") and typeof(locked) == "string" then
+		card.Image = locked
+	end
+
+	for _, child in card:GetChildren() do
+		if child:IsA("GuiObject") then
+			child.Visible = child.Name == "NameLabel" and emptyText ~= nil
+		end
+	end
+
+	local name = UiKit.child(card, "NameLabel", "TextLabel")
+
+	if name ~= nil and emptyText ~= nil then
+		name.Text = emptyText
+		name.TextTransparency = EMPTY_TEXT_TRANSPARENCY
+	end
+end
+
+-- minSlots keeps that many cards on screen, the ones past count empty (see showEmpty).
+function CardGrid.build(
+	self: CardGrid,
+	count: number,
+	fill: (card: GuiButton, index: number) -> (),
+	minSlots: number?,
+	emptyText: string?
+)
 	local list, template = self.list, self.template
 
 	for _, row in self.rows do
@@ -49,7 +83,9 @@ function CardGrid.build(self: CardGrid, count: number, fill: (card: GuiButton, i
 		return
 	end
 
-	for rowIndex = 1, math.ceil(count / CARDS_PER_ROW) do
+	local slots = math.max(count, minSlots or 0)
+
+	for rowIndex = 1, math.ceil(slots / CARDS_PER_ROW) do
 		local row = template:Clone()
 		row.Name = "Row" .. rowIndex
 		row.LayoutOrder = rowIndex
@@ -60,12 +96,14 @@ function CardGrid.build(self: CardGrid, count: number, fill: (card: GuiButton, i
 			local index = (rowIndex - 1) * CARDS_PER_ROW + column
 
 			if card ~= nil and card:IsA("GuiButton") then
-				card.Visible = index <= count
+				card.Visible = index <= slots
 
 				if index <= count then
 					card:SetAttribute("Index", index)
 					UiKit.bindHover(card)
 					fill(card, index)
+				elseif index <= slots then
+					showEmpty(card, emptyText)
 				end
 			end
 		end
@@ -83,8 +121,17 @@ end
 function CardGrid.paintPicked(self: CardGrid, picked: number?)
 	for _, row in self.rows do
 		for _, card in row:GetChildren() do
-			if card:IsA("ImageButton") then
-				card.ImageColor3 = if card:GetAttribute("Index") == picked then PICKED_TINT else RESTING_TINT
+			if not card:IsA("ImageButton") or card:GetAttribute("Index") == nil then
+				continue
+			end
+
+			local isPicked = card:GetAttribute("Index") == picked
+			local lit, resting = card:GetAttribute("LitImage"), card:GetAttribute("RestingImage")
+
+			if typeof(lit) == "string" and typeof(resting) == "string" then
+				card.Image = if isPicked then lit else resting
+			else
+				card.ImageColor3 = if isPicked then PICKED_TINT else RESTING_TINT
 			end
 		end
 	end

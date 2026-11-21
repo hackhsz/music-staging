@@ -2,75 +2,83 @@ local AnimationPacks = require(script.Parent.AnimationPacks)
 
 local ShopCatalog = {}
 
--- Robux sales stay closed until the server grants what they sell: a ProcessReceipt
--- for products and the pass perks. Until then every Robux offer shows its price
--- but reads coming soon, whatever ids are filled in.
-ShopCatalog.RobuxSalesOpen = false
+-- PurchaseService grants every product and pass perk below, so an offer sells as soon
+-- as its passId or productId is filled in. An offer marked comingSoon has no grant yet.
+ShopCatalog.RobuxSalesOpen = true
 
 -- Each section lists cosmetics (items) and Robux offers (offers), in shop order.
 ShopCatalog.Sections = {
 	{
 		id = "featured",
 		displayName = "Featured",
-		offers = { "starter-pack", "vip", "double-coins" },
+		setRoad = true,
+		offers = { "stage-pass", "starter-pack", "double-coins", "double-xp" },
 		items = {},
 	},
 	{
-		id = "passes",
-		displayName = "Game Passes",
-		offers = { "vip", "double-coins", "double-xp", "season-pass", "song-pack-1" },
-		items = {},
-	},
-	-- Everything worn or shown off: hand items, trails and auras, arenas, then moves.
-	{
-		id = "style",
-		displayName = "Style",
+		id = "outfits",
+		displayName = "Outfits",
 		items = {
 			"mint-wand-001",
 			"sunset-wand-001",
-			"trail-equalizer-001",
 			"midnight-wand-001",
-			"petal-trail-001",
 			"gold-wand-001",
+			"trail-equalizer-001",
+			"petal-trail-001",
 			"starlight-aura-001",
-			"arena-neon-main",
-			"arena-neon-candy",
-			"arena-sakura-concert",
-			"arena-school-idol",
-			"arena-summer-stage",
-			"arena-pixel-galaxy",
+		},
+	},
+	{
+		id = "emotes",
+		displayName = "Emotes",
+		items = {
 			"hype-dance-001",
 			"spin-emote-001",
 			"star-entrance-001",
 			"spotlight-entrance-001",
 			"crown-pose-001",
 			"heart-pose-001",
+			table.unpack(AnimationPacks.ids()),
 		},
 	},
 	{
-		id = "animation-packs",
-		displayName = "Animation Packs",
-		items = AnimationPacks.ids(),
+		id = "stages",
+		displayName = "Stages",
+		items = {
+			"arena-neon-main",
+			"arena-neon-candy",
+			"arena-sakura-concert",
+			"arena-school-idol",
+			"arena-summer-stage",
+			"arena-pixel-galaxy",
+		},
+	},
+	{
+		id = "passes",
+		displayName = "Passes",
+		offers = { "stage-pass", "double-coins", "double-xp", "vip", "song-pack-1" },
+		items = {},
 	},
 }
 
 -- Robux offers. kind "pass" is a game pass (passId); "bundle" is a developer
 -- product (productId). oneTime offers can be bought once per player; a hero offer
 -- gets the wide banner; wasRobux shows a struck-out old price and its discount;
--- badge is the corner ribbon. The perks are placeholders until each is designed
--- and built on the server.
+-- badge is the corner ribbon. grants is what PurchaseService hands over for a product;
+-- a pass's perk is applied where it pays out (RewardService for 2x coins and XP).
 ShopCatalog.Offers = {
 	{
 		id = "starter-pack",
 		kind = "bundle",
 		displayName = "Starter Pack",
 		glyph = "🎁",
+		icon = "rbxassetid://70793384037603",
 		rarity = "legendary",
 		robux = 99,
 		wasRobux = 250,
 		oneTime = true,
-		hero = true,
-		includes = { "1,000 Beat Coins", "Sunset Star Wand", "Petal Trail", "Starter name tag" },
+		includes = { "1,000 Beat Coins", "Sunset Star Wand", "Petal Trail" },
+		grants = { coins = 1000, cosmetics = { "sunset-wand-001", "petal-trail-001" } },
 		productId = nil,
 	},
 	{
@@ -78,11 +86,13 @@ ShopCatalog.Offers = {
 		kind = "pass",
 		displayName = "VIP",
 		glyph = "👑",
+		icon = "rbxassetid://127779038184866",
 		rarity = "legendary",
 		robux = 399,
 		badge = "POPULAR",
 		description = "VIP tag and name colour, VIP chat tag and an exclusive VIP emote.",
 		includes = { "VIP tag and name colour", "VIP chat tag", "Exclusive VIP emote" },
+		comingSoon = true,
 		passId = nil,
 	},
 	{
@@ -90,6 +100,7 @@ ShopCatalog.Offers = {
 		kind = "pass",
 		displayName = "2x Beat Coins",
 		glyph = "💰",
+		icon = "rbxassetid://115289050254455",
 		rarity = "epic",
 		robux = 249,
 		badge = "BEST SELLER",
@@ -102,6 +113,7 @@ ShopCatalog.Offers = {
 		kind = "pass",
 		displayName = "2x XP",
 		glyph = "⚡",
+		icon = "rbxassetid://106782623695831",
 		rarity = "epic",
 		robux = 199,
 		description = "Double XP from every song, so you level up twice as fast.",
@@ -109,27 +121,32 @@ ShopCatalog.Offers = {
 		passId = nil,
 	},
 	{
-		id = "season-pass",
-		kind = "pass",
-		displayName = "Season Pass",
+		id = "stage-pass",
+		kind = "bundle",
+		displayName = "Stage Pass",
 		glyph = "🎟️",
+		icon = "rbxassetid://116786250829050",
 		rarity = "legendary",
-		robux = 499,
+		robux = 99,
 		badge = "NEW",
-		description = "A premium reward track every season, with a seasonal wand and moves.",
-		includes = { "A premium reward track each season", "Seasonal wand and moves" },
-		passId = nil,
+		description = "Blooming Sky, four weeks. Opens the pass row of the Stage Pass.",
+		includes = { "Every pass reward this season" },
+		opensPass = true,
+		grants = { stagePass = true },
+		productId = nil,
 	},
 	{
 		id = "song-pack-1",
 		kind = "bundle",
 		displayName = "Song Pack",
 		glyph = "💿",
+		icon = "rbxassetid://78973228204637",
 		rarity = "rare",
 		robux = 149,
 		oneTime = true,
 		description = "Unlock the next pack of tracks right away.",
 		includes = { "Unlock the next pack of tracks early" },
+		comingSoon = true,
 		productId = nil,
 	},
 }
@@ -148,11 +165,12 @@ ShopCatalog.CoinPackSection = {
 }
 
 ShopCatalog.CoinPacks = {
-	{ id = "coins-small", displayName = "Handful of Coins", glyph = "💵", rarity = "common", coins = 500, robux = 49, productId = nil },
+	{ id = "coins-small", displayName = "Handful of Coins", glyph = "💵", icon = "rbxassetid://90381087302472", rarity = "common", coins = 500, robux = 49, productId = nil },
 	{
 		id = "coins-medium",
 		displayName = "Bag of Coins",
 		glyph = "💰",
+		icon = "rbxassetid://121968853135819",
 		rarity = "rare",
 		coins = 1500,
 		bonus = "+15% BONUS",
@@ -163,6 +181,7 @@ ShopCatalog.CoinPacks = {
 		id = "coins-large",
 		displayName = "Chest of Coins",
 		glyph = "🧰",
+		icon = "rbxassetid://73967585210718",
 		rarity = "epic",
 		coins = 4000,
 		bonus = "+35% BONUS",
@@ -174,12 +193,34 @@ ShopCatalog.CoinPacks = {
 		id = "coins-huge",
 		displayName = "Vault of Coins",
 		glyph = "🏦",
+		icon = "rbxassetid://111904717942330",
 		rarity = "legendary",
 		coins = 10000,
 		bonus = "+55% BONUS",
 		badge = "BEST VALUE",
 		robux = 649,
 		productId = nil,
+	},
+}
+
+-- The Stage Set Road: a fixed set of looks bought in order, one step at a time, the first
+-- free. No random items (MonetizationPolicy keeps paid random rewards off).
+ShopCatalog.SetRoad = {
+	id = "set-road",
+	season = "blooming-sky",
+	displayName = "Stage Set Road",
+	subtitle = "Blooming Sky",
+	icon = "rbxassetid://118256522459835",
+	freeRewardId = "set-road-free",
+	-- A step whose look is already owned pays these coins instead.
+	ownedRefund = 100,
+	steps = {
+		{ cosmeticId = "candy-hairpin-001", robux = 0 },
+		{ cosmeticId = "petal-trail-001", robux = 49, productId = nil },
+		{ cosmeticId = "sunset-wand-001", robux = 79, productId = nil },
+		{ cosmeticId = "star-entrance-001", robux = 99, productId = nil },
+		{ cosmeticId = "starlight-aura-001", robux = 149, productId = nil },
+		{ cosmeticId = "gold-wand-001", robux = 249, productId = nil },
 	},
 }
 

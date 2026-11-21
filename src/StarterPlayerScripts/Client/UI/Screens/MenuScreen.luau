@@ -28,6 +28,7 @@ local WINDOW_NAMES = {
 	rewards = "Rewards",
 	community = "Community",
 	wardrobe = "Wardrobe",
+	stagePass = "Pass",
 }
 local NAV_NAMES = {
 	home = "HomeButton",
@@ -306,6 +307,9 @@ function MenuScreen.open(self: MenuScreen, key: string)
 	if self.onChanged ~= nil then
 		self.onChanged(key)
 	end
+
+	-- Deferred so the panel has drawn its cards before they pop.
+	task.defer(UiKit.popIn, window)
 end
 
 -- Closes the menu, or only when key is the open window.

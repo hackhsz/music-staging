@@ -1,5 +1,4 @@
 --!strict
-local CollectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
 
 local UiKit = require(script.Parent.Parent.UiKit)
@@ -7,8 +6,9 @@ local UiKit = require(script.Parent.Parent.UiKit)
 local PAGE_GAP = 10
 local DIMMED = 0.45
 -- A styled (Pill) buy button that can be pressed takes this tag.
-local BUYABLE_TAG = "Primary"
 local OWNED_TEXT = "OWNED"
+local FREE_TEXT = "FREE"
+local VIEW_TEXT = "VIEW"
 local ONE_TIME_TEXT = "ONE-TIME OFFER"
 -- The cards under a hero banner get their own small header, as the featured section's do.
 local CARD_HEADER = "POPULAR"
@@ -299,22 +299,24 @@ function ShopOffers._bindBuy(self: ShopOffers, card: Instance, entry: any)
 	local owned = entry.owned == true
 
 	if price ~= nil then
-		price.Text = if owned then OWNED_TEXT else ("R$ %d"):format(entry.robux or 0)
+		price.Text = if owned
+			then entry.ownedText or OWNED_TEXT
+			elseif entry.opensPass == true and entry.robux == nil then VIEW_TEXT
+			elseif entry.robux == 0 then FREE_TEXT
+			else ("R$ %d"):format(entry.robux or 0)
 	end
 
-	local buyable = not owned and entry.comingSoon ~= true
+	local buyable = not owned and (entry.comingSoon ~= true or entry.opensPass == true)
 
 	if button:IsA("ImageButton") then
 		button.ImageTransparency = if buyable then 0 else DIMMED
-	elseif buyable then
-		CollectionService:AddTag(button, BUYABLE_TAG)
 	else
-		CollectionService:RemoveTag(button, BUYABLE_TAG)
+		UiKit.setLit(button, buyable)
 	end
 
 	UiKit.bindHover(button)
 	button.Activated:Connect(function()
-		if owned then
+		if owned and entry.opensPass ~= true then
 			UiKit.playSound("uiDenied")
 		elseif self.onBuy ~= nil then
 			self.onBuy(entry)
@@ -326,7 +328,10 @@ function ShopOffers._fillHero(self: ShopOffers, banner: GuiObject, entry: any)
 	local lines = {}
 
 	for _, line in if type(entry.includes) == "table" then entry.includes else {} do
-		table.insert(lines, "+ " .. string.upper(tostring(line)))
+		-- Set Road lines carry their own step marks.
+		local bullet = if entry.kind == "set_road" then "" else "+ "
+
+		table.insert(lines, bullet .. string.upper(tostring(line)))
 	end
 
 	UiKit.setIcon(UiKit.child(banner, "Glyph", "TextLabel"), entry.glyph, entry.icon)

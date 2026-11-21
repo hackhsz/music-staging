@@ -68,6 +68,7 @@ type Fields = {
 	windows: MenuScreen.MenuScreen?,
 	giftButton: GuiButton?,
 	giftDot: GuiObject?,
+	passButton: GuiButton?,
 	communityButton: GuiButton?,
 	communityDot: GuiObject?,
 	daily: GuiObject?,
@@ -78,6 +79,7 @@ type Fields = {
 	idle: boolean,
 	photoMode: boolean,
 	menuOpen: boolean,
+	covered: boolean,
 	shown: boolean,
 	onShown: ((shown: boolean) -> ())?,
 	slideToken: number,
@@ -180,6 +182,7 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 		windows = windows,
 		giftButton = UiKit.authored(topButtons, "GiftButton", "GuiButton"),
 		giftDot = UiKit.authored(topButtons, "GiftButton.Dot", "GuiObject"),
+		passButton = UiKit.authored(topButtons, "PassButton", "GuiButton"),
 		communityButton = UiKit.authored(topButtons, "CommunityButton", "GuiButton"),
 		communityDot = UiKit.authored(topButtons, "CommunityButton.Dot", "GuiObject"),
 		daily = daily,
@@ -190,6 +193,7 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 		idle = true,
 		photoMode = false,
 		menuOpen = false,
+		covered = false,
 		shown = true,
 		onShown = nil,
 		slideToken = 0,
@@ -221,7 +225,7 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 		bindNavHover(button)
 	end
 
-	for _, button in { fields.giftButton, fields.communityButton, fields.addCoinsButton } do
+	for _, button in { fields.giftButton, fields.communityButton, fields.addCoinsButton, fields.passButton } do
 		if button ~= nil then
 			UiKit.bindHover(button)
 		end
@@ -530,6 +534,10 @@ function SideMenu.bindDaily(self: SideMenu, callback: () -> ())
 	bindButton(self.giftButton, callback)
 end
 
+function SideMenu.bindPass(self: SideMenu, callback: () -> ())
+	bindButton(self.passButton, callback)
+end
+
 -- The red dot on the Group button while the daily gift is waiting.
 function SideMenu.setCommunityReady(self: SideMenu, ready: boolean)
 	if self.communityDot ~= nil then
@@ -573,6 +581,19 @@ function SideMenu.setMenuOpen(self: SideMenu, open: boolean)
 	self:_refresh(0)
 end
 
+-- A full-screen stage panel is over the lobby. The rail and card slide off without the
+-- lobby counting as hidden, since hiding it would close the panel that hangs off it.
+function SideMenu.setCovered(self: SideMenu, covered: boolean)
+	if self.covered == covered then
+		return
+	end
+
+	self.covered = covered
+	self.slideToken += 1
+	self:_slide(self.rail, self.railHome, RAIL_OFFSCREEN)
+	self:_slide(self.column, self.columnHome, COLUMN_OFFSCREEN)
+end
+
 -- showDelay holds the slide-in back (Retry's flicker guard); a closing window
 -- passes 0 so the lobby comes straight back.
 function SideMenu._refresh(self: SideMenu, showDelay: number?)
@@ -612,7 +633,7 @@ function SideMenu._slide(self: SideMenu, gui: GuiObject?, home: UDim2, away: UDi
 		return
 	end
 
-	if self.shown then
+	if self.shown and not self.covered then
 		gui.Visible = true
 		gui.Position = home + away
 		tween(gui, { Position = home }).Completed:Connect(function()

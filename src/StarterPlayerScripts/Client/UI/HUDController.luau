@@ -16,6 +16,7 @@ local MultiplayerPanel = require(script.Parent.Screens.MultiplayerPanel)
 local PadHud = require(script.Parent.Screens.PadHud)
 local PauseOverlay = require(script.Parent.Screens.PauseOverlay)
 local QuestsPanel = require(script.Parent.Screens.QuestsPanel)
+local StagePassPanel = require(script.Parent.Screens.StagePassPanel)
 local ResultsScreen = require(script.Parent.Screens.ResultsScreen)
 local ProgressPopups = require(script.Parent.Screens.ProgressPopups)
 local RewardsPanel = require(script.Parent.Screens.RewardsPanel)
@@ -81,6 +82,7 @@ type Fields = {
 	abilityBar: AbilityBar.AbilityBar,
 	abilityPicker: AbilityPicker.AbilityPicker,
 	quests: QuestsPanel.QuestsPanel,
+	stagePass: StagePassPanel.StagePassPanel,
 	islands: IslandsPanel.IslandsPanel,
 	market: MarketPanel.MarketPanel,
 	rewards: RewardsPanel.RewardsPanel,
@@ -96,6 +98,7 @@ type Fields = {
 	padLayout: boolean,
 	photoMode: boolean,
 	lessonFocus: boolean,
+	windowOpen: boolean,
 }
 
 -- The HUD is a set of screens that draw state and report taps. It owns no game
@@ -160,6 +163,7 @@ function HUDController.new(): HUDController
 		abilityBar = AbilityBar.new(HUDController._abilityFrames(padGui, authored)),
 		abilityPicker = AbilityPicker.new(windows),
 		quests = QuestsPanel.new(windows),
+		stagePass = StagePassPanel.new(windows),
 		islands = IslandsPanel.new(windows),
 		market = MarketPanel.new(windows),
 		rewards = RewardsPanel.new(windows),
@@ -173,6 +177,7 @@ function HUDController.new(): HUDController
 		padLayout = false,
 		photoMode = false,
 		lessonFocus = false,
+		windowOpen = false,
 	}
 	local self = setmetatable(fields, HUDController)
 
@@ -184,6 +189,9 @@ function HUDController.new(): HUDController
 		end
 	end
 
+	self.stages:bindOpenChanged(function()
+		self:refreshStageCover()
+	end)
 	self.menu:bindShown(function(shown)
 		self.stages:setLobbyShown(shown)
 
@@ -201,7 +209,9 @@ function HUDController.new(): HUDController
 		self:closePanels()
 	end)
 	self.windows:bindChanged(function(open: string?)
-		self.menu:setMenuOpen(open ~= nil)
+		self.windowOpen = open ~= nil
+		self.menu:setMenuOpen(self.windowOpen)
+		self:refreshStageCover()
 	end)
 
 	if authored ~= nil then
@@ -447,9 +457,14 @@ function HUDController.hideSongSelect(self: HUDController)
 	self.multiplayer:setVisible(true)
 end
 
--- The stage's lobby pieces step aside while the picker or a stage panel fills the screen.
+-- The stage's lobby pieces step aside while the picker or a stage panel fills the screen,
+-- and the rail, player card and mode button with them so nothing shows through.
 function HUDController.refreshStageCover(self: HUDController)
+	local panelOpen = self.stagePanels:isOpen() or self.stages:isOpen()
+
 	self.stages:setCovered(self.songSelect:isVisible() or self.stagePanels:isOpen())
+	self.menu:setCovered(panelOpen)
+	self.multiplayer:setCovered(panelOpen or self.windowOpen)
 end
 
 function HUDController.showSummary(self: HUDController, summary: any)
