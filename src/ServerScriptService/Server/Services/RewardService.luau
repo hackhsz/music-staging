@@ -140,6 +140,7 @@ local function recordBest(profile: any, songId: string, summary: any)
 
 	best.score = math.max(tonumber(best.score) or 0, tonumber(summary.score) or 0)
 	best.combo = math.max(tonumber(best.combo) or 0, tonumber(summary.maxCombo) or 0)
+	best.accuracy = math.max(tonumber(best.accuracy) or 0, math.clamp(tonumber(summary.accuracy) or 0, 0, 1))
 	profile.stats.songBests[songId] = best
 end
 

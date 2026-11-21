@@ -43,6 +43,8 @@ export type StageChallenger = StageRow & {
 	attempts: number,
 	bestScore: number,
 }
+export type Goal = { chartId: string, headline: string, detail: string, grade: string? }
+export type XpRules = { finish: number, grades: { [string]: number }, first: number, friend: number, todayMultiplier: number }
 export type Stages = {
 	rank: number,
 	name: string,
@@ -53,6 +55,8 @@ export type Stages = {
 	rows: { StageRow },
 	challenger: StageChallenger?,
 	nextChart: string?,
+	nextGoal: Goal?,
+	xpRules: XpRules,
 	nextOpens: { string },
 	ranks: { { name: string, xp: number } },
 	dailyAvailable: boolean,
@@ -353,6 +357,86 @@ local function nextStageChart(rows: { StageRow }, challenger: StageChallenger?):
 	return if weakest ~= nil then weakest.chartId else nil
 end
 
+local function gradeAbove(grade: string?): string?
+	local order = GRADE_ORDER[grade or ""] or 0
+
+	for name, value in GRADE_ORDER do
+		if value == order + 1 then
+			return name
+		end
+	end
+
+	return nil
+end
+
+local function withArticle(grade: string): string
+	return (if grade == "A" or grade == "S" then "AN " else "A ") .. grade
+end
+
+local function goalFor(profile: any, chartId: string?, rows: { StageRow }, challenger: StageChallenger?): Goal?
+	if chartId == nil then
+		return nil
+	end
+
+	if challenger ~= nil and challenger.chartId == chartId and challenger.state ~= "PRACTICE" then
+		return {
+			chartId = chartId,
+			headline = ("BEAT %s WITH %s"):format(challenger.name, withArticle(challenger.needGrade)),
+			detail = ("%s · %s"):format(challenger.songTitle, challenger.difficulty),
+			grade = challenger.needGrade,
+		}
+	end
+
+	local row: StageRow? = nil
+
+	for _, candidate in rows do
+		if candidate.chartId == chartId then
+			row = candidate
+		end
+	end
+
+	if row == nil then
+		return nil
+	end
+
+	if not row.finished then
+		return {
+			chartId = chartId,
+			headline = ("FINISH %s"):format(string.upper(row.songTitle)),
+			detail = ("%s · FIRST FINISH +%d XP"):format(row.difficulty, RankCatalog.Xp.FirstFinish),
+			grade = nil,
+		}
+	end
+
+	local target = gradeAbove(row.grade)
+
+	if target == nil then
+		return nil
+	end
+
+	local best = tonumber(bestOf(profile, chartId).accuracy)
+	local detail = ("%s · %s"):format(row.songTitle, row.difficulty)
+
+	return {
+		chartId = chartId,
+		headline = ("GET %d%% FOR %s"):format(math.floor(RankCatalog.GradeAccuracy[target] * 100 + 0.5), withArticle(target)),
+		detail = if best ~= nil then ("%s · BEST %.1f%%"):format(detail, best * 100) else detail,
+		grade = target,
+	}
+end
+
+local function xpRules(): XpRules
+	local xp = RankCatalog.Xp
+
+	return {
+		finish = xp.Finish,
+		grades = table.clone(xp.GradeBonus),
+		first = xp.FirstFinish,
+		friend = xp.Friend,
+		todayMultiplier = xp.FirstTodayMultiplier,
+	}
+end
+
 -- Every stage with its charts, for the roadmap and the song browser. A stage's
 -- challenger is the one beaten to leave it.
 local function stageList(profile: any, rank: number): { StageEntry }
@@ -447,6 +531,7 @@ function RankCatalog.stages(profile: any, today: number): Stages
 	end
 
 	local notice = RankCatalog.Ranks[rank].lowerNotice
+	local nextChart = nextStageChart(rows, challenger)
 
 	return {
 		rank = rank,
@@ -457,7 +542,9 @@ function RankCatalog.stages(profile: any, today: number): Stages
 		cleared = cleared,
 		rows = rows,
 		challenger = challenger,
-		nextChart = nextStageChart(rows, challenger),
+		nextChart = nextChart,
+		nextGoal = goalFor(profile, nextChart, rows, challenger),
+		xpRules = xpRules(),
 		nextOpens = if progress.maxed then {} else RankCatalog.Ranks[rank + 1].opens,
 		ranks = ranks,
 		dailyAvailable = profile.lastXpBonusDay ~= today,

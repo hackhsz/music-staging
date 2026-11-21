@@ -20,7 +20,6 @@ RunService.PreSimulation:Connect(function()
 end)
 
 local function SetupBouncy(instance: BasePart)
-	print("[bouncy] Setting up on", instance:GetFullName())
 
 	local VelocityBounce = instance:GetAttribute("MinVelocity") or -15
 	local Bounciness = (instance:GetAttribute("Bounciness") or 150)
@@ -38,7 +37,6 @@ local function SetupBouncy(instance: BasePart)
 
 	local touchedConn
 	touchedConn = instance.Touched:Connect(function(other)
-		print("[bouncy] Touched by", other:GetFullName())
 
 		local hitPlayer = Players:GetPlayerFromCharacter(other.Parent)
 		if LocalPlayer ~= hitPlayer then
@@ -46,20 +44,17 @@ local function SetupBouncy(instance: BasePart)
 		end
 
 		if tick() - lastBounce <= 0.2 then
-			print("[bouncy] Bounce on cooldown")
 			return
 		end
 
 		local HumanoidRootPart: BasePart = LocalPlayer.Character.HumanoidRootPart
 
 		if velocity.Y > VelocityBounce then
-			print("[bouncy] Velocity.Y (", velocity.Y, ") > VelocityBounce (", VelocityBounce, "), skipping")
 			return
 		end
 
 		local humanoid = other.Parent:FindFirstChild("Humanoid")
 		if not humanoid or humanoid:GetState() == Enum.HumanoidStateType.Dead then
-			print("[bouncy] No humanoid or humanoid is dead")
 			return
 		end
 
@@ -74,7 +69,6 @@ local function SetupBouncy(instance: BasePart)
 		lastBounce = tick()
 
 		local bounceForce = up * math.min(map(math.max(-velocity.Y, Spring), 0, 100, 0, Bounciness), Bounciness)
-		print("[bouncy] Applying bounce force:", bounceForce)
 
 		HumanoidRootPart.AssemblyLinearVelocity = bounceForce
 		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)

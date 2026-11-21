@@ -9,6 +9,10 @@ place; until then everything sits under Unreleased.
 
 ## Unreleased
 
+### Changed
+
+- Lobby performance: the island's spinning quest icon, bobbing arrow and music rings now animate on each client instead of the server streaming their moves every frame; the unused Workspace copy of Music Ring (and its 3-minute song) is gone, the three animator scripts hunting for the old `Islands_9_3` island are deleted, and bouncy pads no longer print on every touch.
+
 ### Added
 
 - Floor charts come from a pattern library (`scripts/music/library.py`): 17 authored patterns (routes, either/or pairs, board zones, holds) make up about three quarters of each chart, generated bars on the beat fill the rest, and every step passes a reach rule against every tile you might be standing on. No danger tiles, claps, rushes, slides or items on these charts. Any-tile sets can now be up to 10 tiles. `chart-audio.py --generator walk` keeps the old floor.
