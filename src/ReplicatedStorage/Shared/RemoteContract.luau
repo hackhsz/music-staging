@@ -350,6 +350,8 @@ RemoteContract.Events = {
 			"passes",
 			"boughtOffers",
 			"setRoad",
+			"xpBonusReady",
+			"streakDays",
 		},
 	},
 	ClaimPassTier = {
@@ -474,6 +476,23 @@ RemoteContract.Events = {
 		direction = "server_to_client",
 		payload = {
 			"boards",
+		},
+	},
+	-- The player's weekly league group: tier, place, the rows around them and last week's result.
+	LeagueState = {
+		name = "LeagueState",
+		direction = "server_to_client",
+		payload = {
+			"tier",
+			"tierName",
+			"rank",
+			"of",
+			"points",
+			"rows",
+			"promoteLine",
+			"toPromote",
+			"resetsAt",
+			"result",
 		},
 	},
 	-- Where the player is in the first-join lesson and the steps after it, and where

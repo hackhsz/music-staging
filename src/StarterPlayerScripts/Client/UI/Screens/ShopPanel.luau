@@ -457,11 +457,13 @@ end
 function ShopPanel._fillCard(self: ShopPanel, card: GuiObject, entry: any)
 	local glyph = UiKit.child(card:FindFirstChild("Icon"), "Glyph", "TextLabel")
 	local name = UiKit.child(card, "NameLabel", "TextLabel")
-	local tag = UiKit.child(card, "TagLabel", "TextLabel")
+	local pill = UiKit.child(card, "PricePill", "GuiObject")
+	local tag = UiKit.child(pill or card, "TagLabel", "TextLabel")
 	local check = UiKit.child(card, "Check", "GuiObject")
 	local star = UiKit.child(card, "Star", "ImageLabel")
 	local rarity = rarityOf(entry)
 	local tagText, tagColor = tagFor(entry)
+	local _, buyable = actionFor(entry)
 
 	UiKit.setIcon(glyph, glyphFor(entry), entry.icon)
 
@@ -478,9 +480,14 @@ function ShopPanel._fillCard(self: ShopPanel, card: GuiObject, entry: any)
 		name.Text = tostring(entry.displayName or entry.id)
 	end
 
+	if pill ~= nil then
+		UiKit.setLit(pill, buyable)
+	end
+
 	if tag ~= nil then
 		tag.Text = tagText
-		tag.TextColor3 = tagColor
+		-- On a lit price button the text stays white; a greyed one keeps the state's colour.
+		tag.TextColor3 = if pill ~= nil and buyable then Colors.White else tagColor
 
 		-- The authored gradient would tint every state the same.
 		local tint = tag:FindFirstChildOfClass("UIGradient")

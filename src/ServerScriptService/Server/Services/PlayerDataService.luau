@@ -69,6 +69,9 @@ local DEFAULT_PROFILE = {
 	-- Developer product receipts already granted: PurchaseId to the time granted.
 	receipts = {},
 	setRoad = { season = "", step = 0, freeClaimed = false },
+	-- Days in a row with a finished song: the last such day (DailyChallenges.dayKey) and the count.
+	streak = { lastDay = -1, days = 0 },
+	league = { week = -1, tier = 1, best = {}, points = 0 },
 	rewardCooldowns = {},
 	redeemedCodes = {},
 	daily = {

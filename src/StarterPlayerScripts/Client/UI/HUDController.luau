@@ -17,6 +17,7 @@ local PadHud = require(script.Parent.Screens.PadHud)
 local PauseOverlay = require(script.Parent.Screens.PauseOverlay)
 local QuestsPanel = require(script.Parent.Screens.QuestsPanel)
 local StagePassPanel = require(script.Parent.Screens.StagePassPanel)
+local WeekPanel = require(script.Parent.Screens.WeekPanel)
 local ResultsScreen = require(script.Parent.Screens.ResultsScreen)
 local ProgressPopups = require(script.Parent.Screens.ProgressPopups)
 local RewardsPanel = require(script.Parent.Screens.RewardsPanel)
@@ -83,6 +84,7 @@ type Fields = {
 	abilityPicker: AbilityPicker.AbilityPicker,
 	quests: QuestsPanel.QuestsPanel,
 	stagePass: StagePassPanel.StagePassPanel,
+	week: WeekPanel.WeekPanel,
 	islands: IslandsPanel.IslandsPanel,
 	market: MarketPanel.MarketPanel,
 	rewards: RewardsPanel.RewardsPanel,
@@ -164,6 +166,7 @@ function HUDController.new(): HUDController
 		abilityPicker = AbilityPicker.new(windows),
 		quests = QuestsPanel.new(windows),
 		stagePass = StagePassPanel.new(windows),
+		week = WeekPanel.new(windows),
 		islands = IslandsPanel.new(windows),
 		market = MarketPanel.new(windows),
 		rewards = RewardsPanel.new(windows),
@@ -204,9 +207,6 @@ function HUDController.new(): HUDController
 	end)
 	self.pause:bindClosed(function()
 		self.settings:setVisible(false)
-	end)
-	self.menu:bindHome(function()
-		self:closePanels()
 	end)
 	self.windows:bindChanged(function(open: string?)
 		self.windowOpen = open ~= nil

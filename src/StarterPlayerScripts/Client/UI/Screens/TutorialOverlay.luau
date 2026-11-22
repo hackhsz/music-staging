@@ -201,7 +201,14 @@ function TutorialOverlay.show(self: TutorialOverlay, card: Card)
 	self.step.Text = card.progress or ""
 	self.skip.Visible = card.skippable ~= false
 	self.action.Visible = card.action ~= nil
-	self.action.Text = card.action or ""
+	-- The button's art is a child, so its words sit in a Label above it.
+	local actionLabel = UiKit.child(self.action, "Label", "TextLabel")
+
+	if actionLabel ~= nil then
+		actionLabel.Text = card.action or ""
+	else
+		self.action.Text = card.action or ""
+	end
 	self.onAction = card.onAction
 	self:_place(card.low == true)
 	self:_playDemo(card.demo)

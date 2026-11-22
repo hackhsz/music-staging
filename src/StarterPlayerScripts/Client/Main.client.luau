@@ -36,6 +36,7 @@ local MarketController = require(Controllers:WaitForChild("MarketController"))
 local OnboardingController = require(Controllers:WaitForChild("OnboardingController"))
 local QuestController = require(Controllers:WaitForChild("QuestController"))
 local StagePassController = require(Controllers:WaitForChild("StagePassController"))
+local WeekController = require(Controllers:WaitForChild("WeekController"))
 local ProgressController = require(Controllers:WaitForChild("ProgressController"))
 local RewardsController = require(Controllers:WaitForChild("RewardsController"))
 local CommunityController = require(Controllers:WaitForChild("CommunityController"))
@@ -241,6 +242,16 @@ lobby = LobbyController.new({
 })
 local quests = QuestController.new({ remotes = remotes, hud = hud })
 local stagePass = StagePassController.new({ remotes = remotes, hud = hud })
+local week = WeekController.new({
+	remotes = remotes,
+	hud = hud,
+	openShop = function()
+		shop:open()
+	end,
+	openPass = function()
+		hud.stagePass:setVisible(true)
+	end,
+})
 local wardrobe = WardrobeController.new({
 	remotes = remotes,
 	hud = hud,
@@ -314,6 +325,7 @@ lobby:start()
 stages:start()
 quests:start()
 stagePass:start()
+week:start()
 wardrobe:start()
 market:start()
 rewards:start()

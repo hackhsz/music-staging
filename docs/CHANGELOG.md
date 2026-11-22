@@ -11,9 +11,14 @@ place; until then everything sits under Unreleased.
 
 ### Changed
 
+- This Week board, Lobby HUD and Stage Pass rebuilt to GPT mockups (in the Encore UI Brief): a bigger left rail with HOME first, a wider SOLO PLAY aligned over PLAY, the Stage Pass season line shows when the season ends. Quest rows fill the Quests window, and Rewards gift tiles stack time, icon, reward and timer top to bottom with the code field across the bottom.
 - Robux purchases are granted on the server: dev products go through ProcessReceipt (each receipt granted once, saved before Roblox is told), and 2x Beat Coins and 2x XP passes now double song coins and XP. Sales go live per offer once its pass or product id is filled in `ShopCatalog`; VIP and the song pack stay coming soon.
 - The Stage Pass is sold as a one-season R$ 99 product: its shop card opens the Pass window, and the window's UNLOCK PASS button prompts the purchase.
 - The shop's Featured section leads with the Stage Set Road (Blooming Sky): six fixed looks bought in order, the first free, one already owned pays 100 coins instead. No random items.
+- The lobby player card is a slim bar now (avatar, rank, name and coins on one row, the XP line under it) instead of a tall box, and the top icons carry labels like the left rail. The rank hint and SETLIST link are gone; the XP line still opens the setlist.
+- The shop's Featured page is laid out like the Miro board: the Set Road as a tall card on the left, four offer cards in a 2x2 grid beside it, shorter offer lines, and corner badges kept inside the cards.
+- Shop item cards (Outfits, Emotes, Stages) show their price on a glossy button that greys out when the item can't be bought.
+- The loading screen, the "To the stage" cover, the first-join lesson card and the reward toast use the menu look: purple gradient, glossy buttons and bar, Fredoka text.
 - Shop tabs follow the Miro board: FEATURED, OUTFITS, EMOTES, STAGES, PASSES, COINS; animation packs sit under Emotes, and bought passes and one-time offers read OWNED.
 - New squared button art (glossy purple, rounded-rectangle) on the lobby PLAY and SOLO PLAY, every stage-screen PLAY and CHALLENGE, Travel and Market; each has a pressed look and a greyed locked look, and the player card's `+` is purple instead of green. Art and asset ids live in the Encore UI Brief's `art` folder.
 - Menu windows share one new clean background (no tiled notes, no divider), the cyan picks and lime buttons are pink, the stray note stickers hanging off the windows are gone, and window titles are white-pink instead of mint.
@@ -28,6 +33,10 @@ place; until then everything sits under Unreleased.
 
 ### Added
 
+- Weekly League: each week (Monday 00:00 UTC) players race in a group of their tier (Bronze to Superstar) on the sum of their best five songs, one score per song. At the week's end the top 5 move up and the bottom places move down (only in groups of 10 or more), with 150 / 75 / 25 coins for up / stay / down. Shown on the This Week board.
+- Daily streak: finishing a song on consecutive days counts up a streak, shown on the This Week board.
+- FOLLOW EVENT on the Saturday Live Show card RSVPs to the next Roblox experience event (made in Creator Hub); the button hides when none is scheduled.
+- This Week board, opened from the rail's new HOME button: the Saturday Live Show (date and countdown), today's challenges with the 2x XP first song, three picks from the shop, the weekly league top five with your place, and Stage Pass progress with the next free and pass rewards.
 - Stage Pass (Blooming Sky season, 4 weeks): every finished song that earns XP also earns 20 pass points, every 200 points is a tier, and each of 15 tiers has a free reward and a pass reward (coins or a cosmetic) you claim in the new Pass window, opened from the ticket button by the player card. The server checks every claim and saves the track; it resets when the season changes. The pass row stays locked ("coming soon") until Robux sales and pass ownership are built. Studio playtests: set the `StagePassPoints` number on Workspace to try tiers; live servers ignore it.
 - The stages roadmap (ALL STAGES) follows the rank road mockup: one squared panel with each stage's requirement and unlocks under its marker, then a rank-up song card, an XP-per-song table and a Next Goal card with a PLAY button for the song to play next. Song bests now also keep your best accuracy.
 

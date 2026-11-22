@@ -40,6 +40,7 @@ local USED_EVENTS = {
 	"PurchaseResult",
 	"ProfileSync",
 	"LeaderboardData",
+	"LeagueState",
 	"ClaimReward",
 	"ClaimPassTier",
 	"RedeemCode",
@@ -68,7 +69,7 @@ local USED_EVENTS = {
 -- the join-time pushes would reach whichever controller connected first. These are
 -- heard through one connection each, and the latest payload is replayed to every
 -- listener that arrives after it.
-local REPLAYED_EVENTS = { "ProfileSync", "LeaderboardData", "OnboardingState", "StallState" }
+local REPLAYED_EVENTS = { "ProfileSync", "LeaderboardData", "LeagueState", "OnboardingState", "StallState" }
 
 export type Remotes = { [string]: RemoteEvent }
 

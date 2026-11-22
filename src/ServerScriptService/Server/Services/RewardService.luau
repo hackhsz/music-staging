@@ -308,6 +308,7 @@ function RewardService:applySongSummary(player: Player, summary: any)
 
 	if xpGained > 0 then
 		profile.lastXpBonusDay = today
+		self:_extendStreak(profile, today)
 		profile.stats.songBests[songId].finished = true
 	end
 
@@ -539,6 +540,29 @@ function RewardService:claimPassTier(player: Player, tier: number, row: string)
 	self.playerDataService:markDirty(player)
 
 	return true, nil, reward
+end
+
+function RewardService:_extendStreak(profile: any, today: number)
+	local streak = if type(profile.streak) == "table" then profile.streak else { lastDay = -1, days = 0 }
+
+	if streak.lastDay ~= today then
+		streak.days = if streak.lastDay == today - 1 then streak.days + 1 else 1
+		streak.lastDay = today
+	end
+
+	profile.streak = streak
+end
+
+-- Days in a row with a finished song; still alive until the end of the day after the last one.
+function RewardService:streakDays(profile: any): number
+	local streak = profile.streak
+	local today = DailyChallenges.dayKey(os.time())
+
+	if type(streak) ~= "table" or streak.lastDay < today - 1 then
+		return 0
+	end
+
+	return streak.days
 end
 
 function RewardService:unlockStagePass(player: Player)

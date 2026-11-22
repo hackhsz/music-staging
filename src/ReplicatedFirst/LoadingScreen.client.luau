@@ -5,7 +5,7 @@ local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local TweenService = game:GetService("TweenService")
 
 local COLORS = {
-	track = Color3.fromRGB(36, 37, 61),
+	track = Color3.fromRGB(96, 48, 140),
 	pink = Color3.fromRGB(255, 132, 229),
 	yellow = Color3.fromRGB(255, 226, 76),
 }

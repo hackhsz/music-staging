@@ -29,6 +29,7 @@ local WINDOW_NAMES = {
 	community = "Community",
 	wardrobe = "Wardrobe",
 	stagePass = "Pass",
+	home = "Week",
 }
 local NAV_NAMES = {
 	home = "HomeButton",

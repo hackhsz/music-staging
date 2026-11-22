@@ -8,7 +8,7 @@ local REVEAL_SECONDS = 0.4
 local CAPTION_POP_FROM = 0.85
 local FLOOR_STEP_SECONDS = 0.3
 local TILE_COUNT = 9
-local TILE_IDLE = Color3.fromRGB(36, 37, 61)
+local TILE_IDLE = Color3.fromRGB(96, 48, 140)
 local TILE_LIT = Color3.fromRGB(255, 132, 229)
 
 type Fields = {

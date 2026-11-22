@@ -19,6 +19,7 @@ local RewardService = require(Services:WaitForChild("RewardService"))
 local PurchaseService = require(Services:WaitForChild("PurchaseService"))
 local InventoryService = require(Services:WaitForChild("InventoryService"))
 local LeaderboardService = require(Services:WaitForChild("LeaderboardService"))
+local LeagueService = require(Services:WaitForChild("LeagueService"))
 local LeaderstatsService = require(Services:WaitForChild("LeaderstatsService"))
 local MultiplayerService = require(Services:WaitForChild("MultiplayerService"))
 local RateLimiter = require(Services:WaitForChild("RateLimiter"))
@@ -49,6 +50,7 @@ local purchaseResultRemote = remotes:WaitForChild(RemoteContract.Events.Purchase
 local profileSyncRemote = remotes:WaitForChild(RemoteContract.Events.ProfileSync.name)
 local songCatalogRemote = remotes:WaitForChild(RemoteContract.Events.SongCatalog.name)
 local leaderboardDataRemote = remotes:WaitForChild(RemoteContract.Events.LeaderboardData.name)
+local leagueStateRemote = remotes:WaitForChild(RemoteContract.Events.LeagueState.name)
 local setAbilityLoadoutRemote = remotes:WaitForChild(RemoteContract.Events.SetAbilityLoadout.name)
 local openSongPickerRemote = remotes:WaitForChild(RemoteContract.Events.OpenSongPicker.name)
 local setPlayerSettingRemote = remotes:WaitForChild(RemoteContract.Events.SetPlayerSetting.name)
@@ -72,6 +74,7 @@ local rewardService = RewardService.new(playerDataService)
 local purchaseService = PurchaseService.new(playerDataService, rewardService)
 local inventoryService = InventoryService.new(playerDataService)
 local leaderboardService = LeaderboardService.new()
+local leagueService = LeagueService.new(playerDataService, leaderboardService)
 local leaderstatsService = LeaderstatsService.new(playerDataService)
 local multiplayerService = MultiplayerService.new(multiplayerStatusRemote)
 local rateLimiter = RateLimiter.new()
@@ -167,6 +170,8 @@ local function buildProfileSnapshot(player: Player)
 		passes = profile.passes,
 		boughtOffers = profile.boughtOffers,
 		setRoad = rewardService:setRoadSnapshot(player),
+		xpBonusReady = profile.lastXpBonusDay ~= DailyChallenges.dayKey(os.time()),
+		streakDays = rewardService:streakDays(profile),
 	}
 end
 
@@ -199,6 +204,15 @@ function Backend.sendSongCatalog(player: Player)
 	songCatalogRemote:FireClient(player, SongCollection.buildCatalogPayload(playerDataService:get(player)))
 end
 
+-- Reads league boards, so it yields; callers spawn it.
+local function sendLeague(player: Player)
+	local snapshot = leagueService:snapshot(player)
+
+	if snapshot ~= nil and player.Parent == Players then
+		leagueStateRemote:FireClient(player, snapshot)
+	end
+end
+
 local function sendLeaderboards(player: Player)
 	if leaderboardSnapshot ~= nil then
 		leaderboardDataRemote:FireClient(
@@ -216,6 +230,7 @@ local function refreshLeaderboards()
 
 	for _, player in Players:GetPlayers() do
 		sendLeaderboards(player)
+		task.spawn(sendLeague, player)
 	end
 end
 
@@ -251,6 +266,10 @@ function Backend.applySongComplete(player: Player, summary: any)
 	-- but does not rank.
 	if summary.cleared == true and (summary.abilitiesUsed or 0) == 0 and not summary.flagged then
 		leaderboardService:recordSongSummary(player, summary)
+		task.spawn(function()
+			leagueService:recordRun(player, tostring(summary.songId), tonumber(summary.score) or 0)
+			sendLeague(player)
+		end)
 	end
 
 	local profile = playerDataService:get(player)
@@ -285,6 +304,16 @@ local function onPlayerAdded(player: Player)
 	playerDataService:load(player)
 	rewardService:startVisit(player)
 	task.spawn(purchaseService.refreshPasses, purchaseService, player)
+	-- A new week settles the last one (place, tier move, coins) before the first push.
+	task.spawn(function()
+		leagueService:refresh(player)
+		task.wait(1)
+
+		if player.Parent == Players then
+			Backend.syncProfile(player)
+			sendLeague(player)
+		end
+	end)
 
 	if player.Parent == Players then
 		leaderstatsService:add(player)
@@ -336,6 +365,7 @@ Players.PlayerRemoving:Connect(function(player)
 	leaderboardService:clear(player)
 	leaderstatsService:clear(player)
 	rewardService:clear(player)
+	leagueService:clear(player)
 	playerDataService:release(player)
 end)
 

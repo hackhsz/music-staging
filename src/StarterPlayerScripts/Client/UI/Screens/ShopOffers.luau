@@ -19,6 +19,7 @@ type Fields = {
 	header: GuiObject?,
 	subheader: GuiObject?,
 	hero: GuiObject?,
+	feature: GuiObject?,
 	passRow: GuiObject?,
 	packRow: GuiObject?,
 	built: { GuiObject },
@@ -99,6 +100,7 @@ function ShopOffers.new(window: Instance?): ShopOffers
 		header = UiKit.authored(templates, "HeaderTemplate", "GuiObject"),
 		subheader = UiKit.authored(templates, "SubheaderTemplate", "GuiObject"),
 		hero = UiKit.authored(templates, "HeroTemplate", "GuiObject"),
+		feature = if templates ~= nil then UiKit.child(templates, "FeatureTemplate", "GuiObject") else nil,
 		passRow = UiKit.authored(templates, "PassRowTemplate", "GuiObject"),
 		packRow = UiKit.authored(templates, "PackRowTemplate", "GuiObject"),
 		built = {},
@@ -165,6 +167,35 @@ function ShopOffers.addOffers(self: ShopOffers, entries: { any })
 			table.insert(packs, entry)
 		else
 			table.insert(cards, entry)
+		end
+	end
+
+	-- With a FeatureTemplate the first hero stands on the left and the first cards beside it.
+	if self.feature ~= nil and #heroes > 0 then
+		local feature = self:_add(self.feature)
+
+		if feature ~= nil then
+			local hero = table.remove(heroes, 1)
+			local banner = UiKit.child(feature, "Hero", "GuiObject")
+
+			if banner ~= nil then
+				self:_fillHero(banner, hero)
+			end
+
+			local slots = cardsPerRow(feature)
+
+			for column = 1, slots do
+				local card = feature:FindFirstChild("Card" .. column)
+				local entry = table.remove(cards, 1)
+
+				if card ~= nil and card:IsA("GuiObject") then
+					card.Visible = entry ~= nil
+
+					if entry ~= nil then
+						self:_fillCard(card, entry)
+					end
+				end
+			end
 		end
 	end
 

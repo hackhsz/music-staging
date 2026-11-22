@@ -12,6 +12,8 @@ local CLAIMED_TRANSPARENCY = 0.35
 local TIERS_BEFORE_CURRENT = 2
 -- The window's pop-in scales it for this long; the scroll waits so the canvas is measured at rest.
 local OPEN_SETTLE_SECONDS = 0.35
+local MONTHS = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" }
+local WEEKDAYS = { "SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT" }
 
 type Fields = {
 	menu: MenuScreen.MenuScreen,
@@ -156,7 +158,20 @@ function StagePassPanel.update(self: StagePassPanel, snapshot: any)
 	local maxed = snapshot.tier >= #snapshot.tiers
 	local fill = UiKit.authored(window, "TierCard.Bar.Fill", "GuiObject")
 
-	setText(window, "SeasonLabel", ("%s · WEEK %d OF %d"):format(snapshot.seasonName, snapshot.week, snapshot.weeks))
+	local ends = os.date("!*t", snapshot.endsUtc) :: any
+
+	setText(
+		window,
+		"SeasonLabel",
+		("%s · WEEK %d OF %d · ENDS %s %d %s"):format(
+			snapshot.seasonName,
+			snapshot.week,
+			snapshot.weeks,
+			WEEKDAYS[ends.wday],
+			ends.day,
+			MONTHS[ends.month]
+		)
+	)
 	setText(window, "TierCard.TierLabel", ("TIER %d"):format(snapshot.tier))
 	setText(
 		window,
