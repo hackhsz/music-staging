@@ -98,19 +98,32 @@ end
 function IslandController._entries(_self: IslandController): { IslandsPanel.Island }
 	local position = rootPosition()
 	local entries: { IslandsPanel.Island } = {}
+	-- Stations can sit inside each other's radius; only the closest one is where the player is.
+	local nearest, nearestDistance = nil, HERE_STUDS
 
 	for _, island in IslandCatalog.Islands do
 		local anchor = anchorPosition(island.station)
+		local distance = if position ~= nil and anchor ~= nil then (position - anchor).Magnitude else math.huge
+
+		if distance <= nearestDistance then
+			nearest, nearestDistance = island.id, distance
+		end
 
 		table.insert(entries, {
 			id = island.id,
 			name = island.name,
 			blurb = island.blurb,
-			glyph = island.glyph,
-			icon = island.icon,
+			tag = island.tag,
+			scene = island.scene,
+			pin = island.pin,
+			what = island.what,
 			area = island.area,
-			here = position ~= nil and anchor ~= nil and (position - anchor).Magnitude <= HERE_STUDS,
+			here = false,
 		})
+	end
+
+	for _, entry in entries do
+		entry.here = entry.id == nearest
 	end
 
 	return entries

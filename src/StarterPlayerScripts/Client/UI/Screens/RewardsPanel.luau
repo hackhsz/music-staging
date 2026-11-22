@@ -6,6 +6,7 @@ local UiKit = require(script.Parent.Parent.UiKit)
 local WINDOW = "rewards"
 local OK_COLOR = Color3.fromRGB(120, 235, 150)
 local FAIL_COLOR = Color3.fromRGB(255, 110, 130)
+local CLAIMED_DIM = 0.55
 
 export type GiftState = "waiting" | "ready" | "claimed"
 export type GiftSpec = { id: string, timeText: string, glyph: string, icon: string? }
@@ -16,6 +17,7 @@ type Tile = { frame: GuiObject, claimButton: GuiButton?, claimLabel: TextLabel?,
 
 type Fields = {
 	menu: MenuScreen.MenuScreen,
+	played: TextLabel?,
 	gifts: GuiObject?,
 	template: GuiObject?,
 	tiles: { [string]: Tile },
@@ -39,6 +41,7 @@ function RewardsPanel.new(menu: MenuScreen.MenuScreen): RewardsPanel
 
 	local fields: Fields = {
 		menu = menu,
+		played = UiKit.authored(window, "PlayedChip.Label", "TextLabel"),
 		gifts = UiKit.authored(window, "Gifts", "GuiObject"),
 		template = UiKit.authored(window, "Templates.GiftTile", "GuiObject"),
 		tiles = {},
@@ -103,6 +106,13 @@ end
 
 function RewardsPanel.bindClaim(self: RewardsPanel, callback: (giftId: string) -> ())
 	self.onClaim = callback
+end
+
+-- How long this visit has run, which is what the gifts count from.
+function RewardsPanel.setPlayed(self: RewardsPanel, text: string)
+	if self.played ~= nil then
+		self.played.Text = text
+	end
 end
 
 function RewardsPanel.setCodeResult(self: RewardsPanel, text: string, ok: boolean)
@@ -219,6 +229,24 @@ function RewardsPanel.setGiftState(self: RewardsPanel, id: string, state: GiftSt
 
 	if tile.claimButton ~= nil then
 		UiKit.setLit(tile.claimButton, state == "ready")
+	end
+
+	UiKit.setLit(tile.frame, state == "ready")
+
+	local tick = UiKit.child(tile.frame, "Tick", "GuiObject")
+	local lock = UiKit.child(tile.frame, "Lock", "GuiObject")
+	local art = UiKit.child(tile.frame, "Art", "ImageLabel")
+
+	if tick ~= nil then
+		tick.Visible = state == "claimed"
+	end
+
+	if lock ~= nil then
+		lock.Visible = state == "waiting"
+	end
+
+	if art ~= nil then
+		art.ImageTransparency = if state == "claimed" then CLAIMED_DIM else 0
 	end
 end
 

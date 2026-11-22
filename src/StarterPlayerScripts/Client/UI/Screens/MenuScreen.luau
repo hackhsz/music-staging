@@ -2,14 +2,20 @@
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local MenuAmbience = require(script.Parent.Parent.MenuAmbience)
+local MenuLife = require(script.Parent.Parent.MenuLife)
 local UiKit = require(script.Parent.Parent.UiKit)
 
 local OPEN_SECONDS = 0.36
-local OPEN_FROM = UDim2.fromScale(0, 0.06)
+local OPEN_FROM = UDim2.fromScale(0, 0.1)
 local SWITCH_SECONDS = 0.26
 local SWITCH_FROM = UDim2.fromScale(0.035, 0)
-local CLOSE_SECONDS = 0.18
-local POP_FROM = 0.84
+local CLOSE_SECONDS = 0.16
+local CLOSE_TO = UDim2.fromScale(0, 0.1)
+local POP_FROM = 0.9
+-- A window with this attribute set gets drifting notes behind its content.
+local AMBIENCE = "Ambience"
+local BACKGROUND_NAME = "Background"
 local PHONE_SUFFIX = "Phone"
 local PHONE_SIZE = "PhoneSize"
 local PHONE_ASPECT = "PhoneAspect"
@@ -30,6 +36,10 @@ local WINDOW_NAMES = {
 	wardrobe = "Wardrobe",
 	stagePass = "Pass",
 	home = "Week",
+}
+-- Windows opened from one dock button share a tab strip (Holder.GroupTabs) along their top.
+local GROUPS: { { { key: string, label: string } } } = {
+	{ { key = "wardrobe", label = "WARDROBE" }, { key = "loadout", label = "LOADOUT" } },
 }
 local NAV_NAMES = {
 	home = "HomeButton",
@@ -55,6 +65,9 @@ type Fields = {
 	closeToken: number,
 	homes: { [GuiObject]: UDim2 },
 	onChanged: ((name: string?) -> ())?,
+	groupTabs: GuiObject?,
+	groupTemplate: GuiObject?,
+	groupButtons: { GuiObject },
 }
 
 -- The lobby's windows, authored in StarterGui.Menu: one at a time beside the
@@ -151,8 +164,20 @@ function MenuScreen.new(gui: ScreenGui?): MenuScreen
 		closeToken = 0,
 		homes = {},
 		onChanged = nil,
+		groupTabs = UiKit.authored(holder, "GroupTabs", "GuiObject"),
+		groupTemplate = nil,
+		groupButtons = {},
 	}
 	local self = setmetatable(fields, MenuScreen)
+
+	if fields.groupTabs ~= nil then
+		fields.groupTemplate = UiKit.child(fields.groupTabs, "TabTemplate", "GuiObject")
+		fields.groupTabs.Visible = false
+
+		if fields.groupTemplate ~= nil then
+			fields.groupTemplate.Visible = false
+		end
+	end
 	-- Tablets take the phone layout too: it is the one built for touch.
 	local phone = isPhone(settledViewport())
 
@@ -179,6 +204,14 @@ function MenuScreen.new(gui: ScreenGui?): MenuScreen
 
 		if window ~= nil then
 			fields.windows[key] = window
+
+			local background = UiKit.child(window, BACKGROUND_NAME, "GuiObject")
+
+			if background ~= nil and root ~= nil and window:GetAttribute(AMBIENCE) == true then
+				MenuAmbience.attach(background, function()
+					return root.Visible and window.Visible
+				end)
+			end
 		end
 	end
 
@@ -198,7 +231,7 @@ function MenuScreen.new(gui: ScreenGui?): MenuScreen
 	return self
 end
 
--- A rail button glows under the pointer and while its window is open. A sprite
+-- A rail button glows while its window is open; under the pointer it only grows. A sprite
 -- name glows only atlas art: on a whole-image button it would stretch an atlas
 -- cut of a different shape over it.
 function MenuScreen._bindNavGlow(self: MenuScreen, key: string, button: GuiButton)
@@ -214,17 +247,12 @@ function MenuScreen._bindNavGlow(self: MenuScreen, key: string, button: GuiButto
 		return
 	end
 
-	local hovered = false
-
 	local function paint()
-		UiKit.setImage(button, if (hovered or self.current == key) and type(glow) == "string" then glow else rest)
+		UiKit.setImage(button, if button:GetAttribute("Lit") == true and type(glow) == "string" then glow else rest)
 	end
 
 	button:SetAttribute("RestImage", rest.image)
-	UiKit.bindHover(button, function(active: boolean)
-		hovered = active
-		paint()
-	end)
+	UiKit.bindHover(button)
 	button:GetAttributeChangedSignal("Lit"):Connect(paint)
 end
 
@@ -281,6 +309,7 @@ function MenuScreen.open(self: MenuScreen, key: string)
 	self.current = key
 	self.closeToken += 1
 	self:_lightNav()
+	self:_showGroupTabs(key)
 
 	UiKit.playSound(if opening then "uiOpen" else "uiSwitch")
 
@@ -311,6 +340,10 @@ function MenuScreen.open(self: MenuScreen, key: string)
 
 	-- Deferred so the panel has drawn its cards before they pop.
 	task.defer(UiKit.popIn, window)
+
+	if window:GetAttribute(AMBIENCE) == true then
+		MenuLife.enter(window)
+	end
 end
 
 -- Closes the menu, or only when key is the open window.
@@ -321,14 +354,25 @@ function MenuScreen.close(self: MenuScreen, key: string?)
 		return
 	end
 
+	local window = self.windows[self.current]
+
 	self.current = nil
 	self.closeToken += 1
 	self:_lightNav()
+	self:_showGroupTabs(nil)
 
 	local token = self.closeToken
 
 	UiKit.playSound("uiClose")
-	self:_tween(self.scale, CLOSE_SECONDS, { Scale = POP_FROM }, nil, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	self:_tween(self.scale, CLOSE_SECONDS, { Scale = POP_FROM }, nil, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	self:_tween(
+		window,
+		CLOSE_SECONDS,
+		{ Position = (self.homes[window] or window.Position) + CLOSE_TO },
+		nil,
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.In
+	)
 	self:_tween(self.backdrop, CLOSE_SECONDS, { BackgroundTransparency = 1 }, nil, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 	task.delay(CLOSE_SECONDS, function()
 		if self.closeToken == token then
@@ -349,9 +393,79 @@ function MenuScreen.toggle(self: MenuScreen, key: string)
 	end
 end
 
+local function groupOf(key: string?): { { key: string, label: string } }?
+	for _, group in GROUPS do
+		for _, entry in group do
+			if entry.key == key then
+				return group
+			end
+		end
+	end
+
+	return nil
+end
+
+-- The open window's group tabs, parented to the window so they ride its open motion.
+function MenuScreen._showGroupTabs(self: MenuScreen, key: string?)
+	local strip, template = self.groupTabs, self.groupTemplate
+	local group = groupOf(key)
+	local window = if key ~= nil then self.windows[key] else nil
+
+	if strip == nil or template == nil then
+		return
+	end
+
+	for _, button in self.groupButtons do
+		button:Destroy()
+	end
+
+	table.clear(self.groupButtons)
+	strip.Visible = group ~= nil and window ~= nil
+
+	if group == nil or window == nil then
+		return
+	end
+
+	strip.Parent = window
+
+	for order, entry in group do
+		local tab = template:Clone()
+		local label = UiKit.child(tab, "Label", "TextLabel")
+
+		tab.Name = "Tab" .. order
+		tab.LayoutOrder = order
+		tab.Visible = true
+
+		if label ~= nil then
+			label.Text = entry.label
+		end
+
+		UiKit.setLit(tab, entry.key == key)
+
+		if tab:IsA("GuiButton") then
+			UiKit.bindHover(tab)
+			tab.Activated:Connect(function()
+				self:open(entry.key)
+			end)
+		end
+
+		tab.Parent = strip
+		table.insert(self.groupButtons, tab)
+	end
+end
+
+-- A rail button stays lit on any window of its group (STYLE while Loadout is open).
 function MenuScreen._lightNav(self: MenuScreen)
+	local group = groupOf(self.current)
+
 	for key, button in self.nav do
-		button:SetAttribute("Lit", self.current == key)
+		local lit = self.current == key
+
+		for _, entry in group or {} do
+			lit = lit or entry.key == key
+		end
+
+		button:SetAttribute("Lit", lit)
 	end
 end
 

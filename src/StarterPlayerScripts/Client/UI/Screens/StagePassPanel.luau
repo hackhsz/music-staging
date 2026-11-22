@@ -10,6 +10,10 @@ local COIN_ICON = "rbxassetid://90381087302472"
 local DIM_TRANSPARENCY = 0.55
 local CLAIMED_TRANSPARENCY = 0.35
 local TIERS_BEFORE_CURRENT = 2
+local MAX_WEEKS = 6
+local ROW_NAMES = { free = "FREE", pass = "PASS" }
+-- What the preview's button says for a reward that cannot be claimed yet.
+local STATE_TEXT = { claimed = "CLAIMED", pass = "NEEDS THE PASS" }
 -- The window's pop-in scales it for this long; the scroll waits so the canvas is measured at rest.
 local OPEN_SETTLE_SECONDS = 0.35
 local MONTHS = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" }
@@ -27,11 +31,16 @@ type Fields = {
 	unlockOpen: boolean,
 	passOwned: boolean,
 	lastTier: number,
+	snapshot: any,
+	-- The reward in the preview; nil until the first snapshot picks one.
+	pickedTier: number?,
+	pickedRow: string,
 }
 
--- The Stage Pass window, authored in StarterGui.Menu's Pass: the season line, the tier
--- bar and a column per tier with its free and pass reward. Drawing only; StagePassController
--- feeds it the server's snapshot and sends the claims.
+-- The Stage Pass window, authored in StarterGui.Menu's Pass: the season line and its weeks,
+-- the tier bar, a column per tier with its free and pass reward, and a preview of the tapped
+-- reward with its claim button. Drawing only; StagePassController feeds it the server's
+-- snapshot and sends the claims.
 local StagePassPanel = {}
 StagePassPanel.__index = StagePassPanel
 
@@ -90,7 +99,25 @@ function StagePassPanel.new(menu: MenuScreen.MenuScreen): StagePassPanel
 		unlockOpen = false,
 		passOwned = false,
 		lastTier = -1,
+		snapshot = nil,
+		pickedTier = nil,
+		pickedRow = "free",
 	} :: Fields, StagePassPanel)
+
+	local claim = UiKit.authored(window, "Preview.ClaimButton", "GuiButton")
+
+	if claim ~= nil then
+		UiKit.bindHover(claim)
+		claim.Activated:Connect(function()
+			local entry = self:_picked()
+
+			if entry ~= nil and entry[self.pickedRow .. "State"] == "ready" and self.onClaim ~= nil then
+				self.onClaim(entry.tier, self.pickedRow)
+			else
+				UiKit.playSound("uiDenied")
+			end
+		end)
+	end
 
 	local unlock = UiKit.authored(window, "UnlockButton", "ImageButton")
 
@@ -163,16 +190,48 @@ function StagePassPanel.update(self: StagePassPanel, snapshot: any)
 	setText(
 		window,
 		"SeasonLabel",
-		("%s · WEEK %d OF %d · ENDS %s %d %s"):format(
+		("%s · ENDS %s %d %s"):format(
 			snapshot.seasonName,
-			snapshot.week,
-			snapshot.weeks,
 			WEEKDAYS[ends.wday],
 			ends.day,
 			MONTHS[ends.month]
 		)
 	)
 	setText(window, "TierCard.TierLabel", ("TIER %d"):format(snapshot.tier))
+	setText(window, "TierCard.OfLabel", ("OF %d"):format(#snapshot.tiers))
+
+	for week = 1, MAX_WEEKS do
+		local marker = UiKit.child(UiKit.authored(window, "Weeks", "GuiObject"), "Week" .. week, "GuiObject")
+
+		if marker ~= nil then
+			marker.Visible = week <= snapshot.weeks
+			UiKit.setLit(marker, week == snapshot.week)
+		end
+	end
+
+	local last = snapshot.tiers[#snapshot.tiers]
+	local looks, coins = 0, 0
+
+	for _, entry in snapshot.tiers do
+		if entry.pass.kind == "coins" then
+			coins += entry.pass.amount or 0
+		else
+			looks += 1
+		end
+	end
+
+	if last ~= nil then
+		local icon, name = rewardLook(last.pass)
+		local art = UiKit.authored(window, "TierCard.FinalIcon", "ImageLabel")
+
+		if art ~= nil then
+			art.Image = icon
+		end
+
+		setText(window, "TierCard.FinalLabel", ("TIER %d · %s"):format(last.tier, name))
+	end
+
+	setText(window, "SummaryLabel", ("PASS ROW: %d LOOKS + %s COINS"):format(looks, withCommas(coins)))
 	setText(
 		window,
 		"TierCard.PointsLabel",
@@ -198,7 +257,14 @@ function StagePassPanel.update(self: StagePassPanel, snapshot: any)
 	end
 
 	self.passOwned = snapshot.passOwned == true
+	self.snapshot = snapshot
+
+	if self.pickedTier == nil then
+		self.pickedTier, self.pickedRow = self:_firstPick(snapshot)
+	end
+
 	self:_drawColumns(snapshot)
+	self:_drawPreview()
 
 	if snapshot.tier ~= self.lastTier then
 		self.lastTier = snapshot.tier
@@ -269,14 +335,76 @@ function StagePassPanel._drawCard(self: StagePassPanel, card: GuiButton?, reward
 
 	UiKit.setLit(card, ready)
 
-	if ready then
-		UiKit.bindHover(card)
-		card.Activated:Connect(function()
-			if self.onClaim ~= nil then
-				self.onClaim(tier, row)
-			end
-		end)
+	local pick = UiKit.child(card, "Pick", "GuiObject")
+
+	if pick ~= nil then
+		pick.Visible = tier == self.pickedTier and row == self.pickedRow
 	end
+
+	UiKit.bindHover(card)
+	card.Activated:Connect(function()
+		self.pickedTier, self.pickedRow = tier, row
+		self:_markPicked()
+		self:_drawPreview()
+	end)
+end
+
+-- The preview opens on something worth claiming, else on the player's own tier.
+function StagePassPanel._firstPick(_self: StagePassPanel, snapshot: any): (number, string)
+	for _, entry in snapshot.tiers do
+		for _, row in { "free", "pass" } do
+			if entry[row .. "State"] == "ready" then
+				return entry.tier, row
+			end
+		end
+	end
+
+	return math.max(snapshot.tier, 1), "free"
+end
+
+function StagePassPanel._picked(self: StagePassPanel): any
+	local snapshot = self.snapshot
+
+	return if snapshot ~= nil and self.pickedTier ~= nil then snapshot.tiers[self.pickedTier] else nil
+end
+
+function StagePassPanel._markPicked(self: StagePassPanel)
+	for index, column in self.columns do
+		for row, name in { free = "Free", pass = "Pass" } do
+			local pick = UiKit.child(UiKit.child(column, name, "GuiObject"), "Pick", "GuiObject")
+
+			if pick ~= nil then
+				pick.Visible = index == self.pickedTier and row == self.pickedRow
+			end
+		end
+	end
+end
+
+function StagePassPanel._drawPreview(self: StagePassPanel)
+	local entry = self:_picked()
+	local preview = UiKit.authored(self.window, "Preview", "GuiObject")
+
+	if entry == nil or preview == nil then
+		return
+	end
+
+	local row = self.pickedRow
+	local state = entry[row .. "State"]
+	local icon, name = rewardLook(entry[row])
+	local art = UiKit.authored(preview, "Icon", "ImageLabel")
+
+	if art ~= nil then
+		art.Image = icon
+	end
+
+	setText(preview, "NameLabel", name)
+	setText(preview, "RowChip.Label", ("%s · TIER %d"):format(ROW_NAMES[row] or "", entry.tier))
+	setText(
+		preview,
+		"ClaimButton.Label",
+		if state == "ready" then "CLAIM" else STATE_TEXT[state] or ("REACH TIER %d"):format(entry.tier)
+	)
+	UiKit.setLit(UiKit.authored(preview, "ClaimButton", "GuiObject"), state == "ready")
 end
 
 -- Keeps the player's tier in view with two earlier tiers beside it. Worked out as a share of

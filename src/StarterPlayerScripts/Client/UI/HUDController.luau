@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
 
+local HudLife = require(script.Parent.HudLife)
 local UiKit = require(script.Parent.UiKit)
 local AuthoredRunHud = require(script.Parent.AuthoredRunHud)
 local AbilityBar = require(script.Parent.Screens.AbilityBar)
@@ -184,6 +185,12 @@ function HUDController.new(): HUDController
 	}
 	local self = setmetatable(fields, HUDController)
 
+	HudLife.attach({
+		UiKit.authored(lobbyGui, "Side", "GuiObject"),
+		UiKit.authored(lobbyGui, "Rail.Buttons", "GuiObject"),
+		UiKit.authored(lobbyGui, "RightColumn.Card.TopButtons", "GuiObject"),
+	})
+
 	gui.Parent = playerGui
 
 	for _, authoredGui in { gameGui, lobbyGui, menuGui, transitionGui, progressGui } do
@@ -193,6 +200,12 @@ function HUDController.new(): HUDController
 	end
 
 	self.stages:bindOpenChanged(function()
+		-- The PLAY menu stands alone: any window or stage panel closes under it.
+		if self.stages:isModeListOpen() then
+			self.windows:close()
+			self.stagePanels:closeAll()
+		end
+
 		self:refreshStageCover()
 	end)
 	self.menu:bindShown(function(shown)
@@ -463,7 +476,8 @@ function HUDController.refreshStageCover(self: HUDController)
 	local panelOpen = self.stagePanels:isOpen() or self.stages:isOpen()
 
 	self.stages:setCovered(self.songSelect:isVisible() or self.stagePanels:isOpen())
-	self.menu:setCovered(panelOpen)
+	self.menu:setCovered(panelOpen or self.stages:isModeListOpen())
+	-- The solo/duo switch sits in the PLAY menu, so that menu does not cover it.
 	self.multiplayer:setCovered(panelOpen or self.windowOpen)
 end
 

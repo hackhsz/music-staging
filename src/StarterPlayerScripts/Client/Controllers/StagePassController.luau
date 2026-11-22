@@ -8,6 +8,7 @@ local HUDController = require(script.Parent.Parent.UI.HUDController)
 local Remotes = require(script.Parent.Parent.Net.Remotes)
 
 local PASS_OFFER_ID = "stage-pass"
+local READY = "ready"
 
 type Deps = {
 	remotes: Remotes.Remotes,
@@ -24,6 +25,20 @@ local StagePassController = {}
 StagePassController.__index = StagePassController
 
 export type StagePassController = typeof(setmetatable({} :: Fields, StagePassController))
+
+local function hasReadyTier(snapshot: any): boolean
+	if type(snapshot) ~= "table" or type(snapshot.tiers) ~= "table" then
+		return false
+	end
+
+	for _, tier in snapshot.tiers do
+		if tier.freeState == READY or tier.passState == READY then
+			return true
+		end
+	end
+
+	return false
+end
 
 function StagePassController.new(deps: Deps): StagePassController
 	return setmetatable({ deps = deps } :: Fields, StagePassController)
@@ -56,6 +71,7 @@ function StagePassController.start(self: StagePassController)
 	Remotes.listen(remotes.ProfileSync, function(payload)
 		if type(payload) == "table" then
 			hud.stagePass:update(payload.stagePass)
+			hud.menu:setPassReady(hasReadyTier(payload.stagePass))
 		end
 	end)
 end

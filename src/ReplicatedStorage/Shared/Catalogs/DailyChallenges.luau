@@ -7,16 +7,17 @@ local DailyChallenges = {}
 
 DailyChallenges.DailyCount = 3
 
+-- art is the flat icon the Quests window shows on the challenge's tile.
 -- metric = key accumulated in the per-day progress table; target = amount to reach.
 -- Cumulative metrics (plays/clears/perfects/greatPlus) sum across the day; "best"
 -- metrics (bestCombo/bestScore) keep the day's max. Both compare progress >= target.
 DailyChallenges.Templates = {
-	{ id = "play-5", icon = "Icon_QuestPlay", glyph = "🎵", name = "Play 5 songs", metric = "plays", target = 5, reward = 50 },
-	{ id = "clear-3", icon = "Icon_QuestClear", glyph = "✅", name = "Clear 3 songs", metric = "clears", target = 3, reward = 60 },
-	{ id = "perfect-50", icon = "Icon_QuestPerfect", glyph = "💯", name = "Land 50 Perfects", metric = "perfects", target = 50, reward = 70 },
-	{ id = "greatplus-40", icon = "Icon_QuestAim", glyph = "🎯", name = "Land 40 Great-or-better", metric = "greatPlus", target = 40, reward = 60 },
-	{ id = "combo-25", icon = "Icon_QuestCombo", glyph = "🔗", name = "Reach a 25 combo", metric = "bestCombo", target = 25, reward = 50 },
-	{ id = "score-9000", icon = "Icon_QuestScore", glyph = "🏅", name = "Score 9000 in one song", metric = "bestScore", target = 9000, reward = 80 },
+	{ id = "play-5", art = "rbxassetid://110566197397498", icon = "Icon_QuestPlay", glyph = "🎵", name = "Play 5 songs", metric = "plays", target = 5, reward = 50 },
+	{ id = "clear-3", art = "rbxassetid://111667487510179", icon = "Icon_QuestClear", glyph = "✅", name = "Clear 3 songs", metric = "clears", target = 3, reward = 60 },
+	{ id = "perfect-50", art = "rbxassetid://130771749257205", icon = "Icon_QuestPerfect", glyph = "💯", name = "Land 50 Perfects", metric = "perfects", target = 50, reward = 70 },
+	{ id = "greatplus-40", art = "rbxassetid://124261961477505", icon = "Icon_QuestAim", glyph = "🎯", name = "Land 40 Great-or-better", metric = "greatPlus", target = 40, reward = 60 },
+	{ id = "combo-25", art = "rbxassetid://79191973447065", icon = "Icon_QuestCombo", glyph = "🔗", name = "Reach a 25 combo", metric = "bestCombo", target = 25, reward = 50 },
+	{ id = "score-9000", art = "rbxassetid://126441945473415", icon = "Icon_QuestScore", glyph = "🏅", name = "Score 9000 in one song", metric = "bestScore", target = 9000, reward = 80 },
 }
 
 function DailyChallenges.dayKey(unixSeconds: number?): number

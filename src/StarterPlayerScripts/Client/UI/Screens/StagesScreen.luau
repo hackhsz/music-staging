@@ -1,6 +1,8 @@
 --!strict
 local TweenService = game:GetService("TweenService")
 
+local MenuAmbience = require(script.Parent.Parent.MenuAmbience)
+local MenuLife = require(script.Parent.Parent.MenuLife)
 local PanelMotion = require(script.Parent.Parent.PanelMotion)
 local UiKit = require(script.Parent.Parent.UiKit)
 
@@ -14,6 +16,18 @@ local MAX_REVEAL_CARDS = 4
 local POP_SECONDS = 0.3
 local POP_FROM = 1.4
 local POP_NAME = "Pop"
+local VINYL_TURN_SECONDS = 3
+local CARD_SLIDE = UDim2.fromScale(0.05, 0)
+local CARD_SLIDE_SECONDS = 0.16
+local LOBBY_AWAY = UDim2.fromScale(0, 0.4)
+local LOBBY_IN_SECONDS = 0.45
+local LOBBY_IN_DELAY = 0.1
+local LOBBY_OUT_SECONDS = 0.2
+local MENU_RISE = UDim2.fromScale(0, 0.1)
+local MENU_FROM_SCALE = 0.9
+local MENU_IN_SECONDS = 0.36
+local MENU_OUT_SECONDS = 0.16
+local MENU_SCALE_NAME = "Open"
 local PORTRAIT_SPRITE = "Stage_Portrait"
 local MODE_ICONS = { [STAGE_MODE] = "Stage_IconStages", [FREE_MODE] = "Stage_IconNote" }
 
@@ -53,6 +67,13 @@ type Fields = {
 	setlistOpen: boolean,
 	modeListOpen: boolean,
 	lobbyUp: boolean,
+	lobbyHome: UDim2?,
+	lobbyToken: number,
+	-- The mode tapped in the PLAY menu, shown as picked before the server confirms it.
+	pickedMode: string?,
+	menuHome: UDim2?,
+	menuDim: number?,
+	menuToken: number,
 	onPlay: ((chartId: string?) -> ())?,
 	onAllSongs: (() -> ())?,
 	onMode: ((modeId: string) -> ())?,
@@ -213,6 +234,12 @@ function StagesScreen.new(gui: ScreenGui?): StagesScreen
 		setlistOpen = false,
 		modeListOpen = false,
 		lobbyUp = false,
+		lobbyHome = nil,
+		lobbyToken = 0,
+		pickedMode = nil,
+		menuHome = nil,
+		menuDim = nil,
+		menuToken = 0,
 		onPlay = nil,
 		onAllSongs = nil,
 		onMode = nil,
@@ -265,16 +292,56 @@ function StagesScreen.new(gui: ScreenGui?): StagesScreen
 	end
 
 	self:_bindButtons(tiles)
+	self:_animatePlay()
 
 	return self
+end
+
+-- The lobby PLAY button is layered art and still until hovered: then its Vinyl turns and its
+-- Card slides out of the sleeve.
+function StagesScreen._animatePlay(self: StagesScreen)
+	local play = UiKit.authored(self.lobby, "PlayButton", "GuiButton")
+	local vinyl = UiKit.child(play, "Vinyl", "GuiObject")
+	local card = UiKit.child(play, "Card", "GuiObject")
+
+	if play == nil or card == nil then
+		return
+	end
+
+	local turn = TweenInfo.new(VINYL_TURN_SECONDS, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
+	local spin = if vinyl ~= nil then TweenService:Create(vinyl, turn, { Rotation = vinyl.Rotation + 360 }) else nil
+
+	local home = card.Position
+
+	local function slide(out: boolean)
+		TweenService:Create(card, TweenInfo.new(CARD_SLIDE_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Position = if out then home + CARD_SLIDE else home,
+		}):Play()
+	end
+
+	play.MouseEnter:Connect(function()
+		slide(true)
+
+		if spin ~= nil then
+			spin:Play()
+		end
+	end)
+	play.MouseLeave:Connect(function()
+		slide(false)
+
+		if spin ~= nil then
+			spin:Pause()
+		end
+	end)
 end
 
 function StagesScreen._bindButtons(self: StagesScreen, tiles: GuiObject?)
 	bind(self.lobby, "ModeTile", function()
 		self:_setModeListOpen(true)
 	end)
+	-- PLAY opens the mode list; picking a mode there starts it.
 	bind(self.lobby, "PlayButton", function()
-		self:_playMode()
+		self:_setModeListOpen(true)
 	end)
 	bind(self.modeList, "Dimmer", function()
 		self:_setModeListOpen(false)
@@ -283,13 +350,38 @@ function StagesScreen._bindButtons(self: StagesScreen, tiles: GuiObject?)
 		self:_setModeListOpen(false)
 	end)
 
+	-- A cover picks the mode; the menu's own PLAY starts it.
 	for tileName, modeId in MODE_TILES do
 		bind(tiles, tileName, function()
-			self:_setModeListOpen(false)
+			self.pickedMode = modeId
 
 			if self.onMode ~= nil then
 				self.onMode(modeId)
 			end
+
+			if self.snapshot ~= nil then
+				self:_renderModeList()
+			end
+		end)
+	end
+
+	bind(self.modeList, "Panel.PlayStart", function()
+		local snapshot = self.snapshot
+		local mode = self.pickedMode or (if snapshot ~= nil then snapshot.playMode else nil)
+
+		self:_setModeListOpen(false)
+
+		if self.onPlay ~= nil and snapshot ~= nil then
+			self.onPlay(if mode == STAGE_MODE then snapshot.nextChart else nil)
+		end
+	end)
+
+	local backdrop = UiKit.authored(self.modeList, "Panel.Skin", "GuiObject")
+	local menu = self.modeList
+
+	if backdrop ~= nil and menu ~= nil then
+		MenuAmbience.attach(backdrop, function()
+			return menu.Visible
 		end)
 	end
 
@@ -424,19 +516,58 @@ function StagesScreen.setCovered(self: StagesScreen, covered: boolean)
 end
 
 function StagesScreen._refreshLobby(self: StagesScreen)
-	local up = self.lobbyShown and self.snapshot ~= nil and not self.covered and not self:isOpen()
+	local up = self.lobbyShown
+		and self.snapshot ~= nil
+		and not self.covered
+		and not self:isOpen()
+		and not self.modeListOpen
 
 	if self.lobby == nil or up == self.lobbyUp then
 		return
 	end
 
 	self.lobbyUp = up
+	self:_slideLobby(up)
+end
+
+-- PLAY leaves and returns with the dock under it: straight down and back up, landing with a
+-- small overshoot, instead of flying in from the side like a full-screen panel.
+function StagesScreen._slideLobby(self: StagesScreen, up: boolean)
+	local lobby = self.lobby
+
+	if lobby == nil then
+		return
+	end
+
+	local home = self.lobbyHome or lobby.Position
+
+	self.lobbyHome = home
+	self.lobbyToken += 1
 
 	if up then
-		self.motion:open(self.lobby)
-	else
-		self.motion:close(self.lobby)
+		lobby.Visible = true
+		lobby.Position = home + LOBBY_AWAY
+		TweenService:Create(
+			lobby,
+			TweenInfo.new(LOBBY_IN_SECONDS, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, LOBBY_IN_DELAY),
+			{ Position = home }
+		):Play()
+		return
 	end
+
+	local token = self.lobbyToken
+	local leave = TweenService:Create(
+		lobby,
+		TweenInfo.new(LOBBY_OUT_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ Position = home + LOBBY_AWAY }
+	)
+
+	leave.Completed:Connect(function()
+		if self.lobbyToken == token then
+			lobby.Visible = false
+		end
+	end)
+	leave:Play()
 end
 
 function StagesScreen._setModeListOpen(self: StagesScreen, open: boolean)
@@ -447,22 +578,71 @@ function StagesScreen._setModeListOpen(self: StagesScreen, open: boolean)
 	end
 
 	self.modeListOpen = up
+	self.pickedMode = nil
+	self:_slideModeList(up)
 
-	if up then
-		self.motion:open(self.modeList)
-	else
-		self.motion:close(self.modeList)
+	self:_refreshLobby()
+
+	if self.onOpenChanged ~= nil then
+		self.onOpenChanged()
 	end
 end
 
-function StagesScreen._playMode(self: StagesScreen)
-	local snapshot = self.snapshot
+-- The PLAY menu opens like the lobby's windows: its panel rises and settles while the dimmer
+-- fades in, and it drops away on close.
+function StagesScreen._slideModeList(self: StagesScreen, up: boolean)
+	local menu = self.modeList
+	local panel = UiKit.authored(menu, "Panel", "GuiObject")
+	local dimmer = UiKit.authored(menu, "Dimmer", "GuiObject")
 
-	if snapshot == nil or self.onPlay == nil then
+	if menu == nil or panel == nil then
 		return
 	end
 
-	self.onPlay(if snapshot.playMode == STAGE_MODE then snapshot.nextChart else nil)
+	local home = self.menuHome or panel.Position
+	local dim = self.menuDim or (if dimmer ~= nil then dimmer.BackgroundTransparency else 1)
+	local scale = UiKit.scaleOf(panel, MENU_SCALE_NAME)
+
+	self.menuHome, self.menuDim = home, dim
+	self.menuToken += 1
+
+	if up then
+		menu.Visible = true
+		panel.Position = home + MENU_RISE
+		scale.Scale = MENU_FROM_SCALE
+		TweenService:Create(panel, TweenInfo.new(MENU_IN_SECONDS, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Position = home }):Play()
+		TweenService:Create(scale, TweenInfo.new(MENU_IN_SECONDS, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+
+		if dimmer ~= nil then
+			dimmer.BackgroundTransparency = 1
+			TweenService:Create(dimmer, TweenInfo.new(MENU_IN_SECONDS), { BackgroundTransparency = dim }):Play()
+		end
+
+		MenuLife.enter(panel)
+		return
+	end
+
+	local token = self.menuToken
+	local leave = TweenService:Create(
+		panel,
+		TweenInfo.new(MENU_OUT_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ Position = home + MENU_RISE }
+	)
+
+	if dimmer ~= nil then
+		TweenService:Create(dimmer, TweenInfo.new(MENU_OUT_SECONDS), { BackgroundTransparency = 1 }):Play()
+	end
+
+	leave.Completed:Connect(function()
+		if self.menuToken == token then
+			menu.Visible = false
+		end
+	end)
+	leave:Play()
+end
+
+function StagesScreen.isModeListOpen(self: StagesScreen): boolean
+	return self.modeListOpen
 end
 
 function StagesScreen.openSetlist(self: StagesScreen)
@@ -627,7 +807,7 @@ function StagesScreen._renderModeList(self: StagesScreen)
 
 	for tileName, modeId in MODE_TILES do
 		local tile = UiKit.authored(tiles, tileName, "GuiObject")
-		local picked = snapshot.playMode == modeId
+		local picked = (self.pickedMode or snapshot.playMode) == modeId
 		local style = self.tileStyles[if picked then "picked" else "resting"]
 
 		if tile ~= nil and style ~= nil then

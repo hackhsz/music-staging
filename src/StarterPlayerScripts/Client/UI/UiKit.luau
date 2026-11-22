@@ -38,11 +38,13 @@ local PHONE_VIEWPORT_HEIGHT = 520
 -- StarterGui only copies into PlayerGui once the character spawns, which in a
 -- busy Studio session can take well past ten seconds.
 local AUTHORED_TIMEOUT = 60
-local BUTTON_HOVER_SCALE = 1.08
-local BUTTON_HOVER_TILT = -3
+local BUTTON_HOVER_SCALE = 1.06
+local BUTTON_HOVER_TILT = 0
 local SQUARE_TOLERANCE_PIXELS = 4
 local BUTTON_PRESS_SCALE = 0.92
 local BUTTON_HOVER_SECONDS = 0.14
+-- A button with this Color3 attribute tints its labels while hovered (the sticker tiles' pink).
+local HOVER_ACCENT_ATTRIBUTE = "HoverAccent"
 local BUTTON_PRESS_SECONDS = 0.06
 local DISABLED_TRANSPARENCY = 0.45
 local POP_IN_FROM = 0.6
@@ -422,11 +424,21 @@ function UiKit.bindHover(button: GuiButton, onHover: ((boolean) -> ())?): () -> 
 	local scale = UiKit.scaleOf(button, "Pop")
 	local restTilt = button.Rotation
 	local hovered = false
+	local accent = button:GetAttribute(HOVER_ACCENT_ATTRIBUTE)
+	local labels: { [TextLabel]: Color3 } = {}
+
+	if typeof(accent) == "Color3" then
+		for _, child in button:GetChildren() do
+			if child:IsA("TextLabel") then
+				labels[child] = child.TextColor3
+			end
+		end
+	end
 
 	UiKit.bindSounds(button)
 
 	local function scaleTo(goal: number, seconds: number)
-		TweenService:Create(scale, TweenInfo.new(seconds, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		TweenService:Create(scale, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 			Scale = goal,
 		}):Play()
 	end
@@ -437,6 +449,12 @@ function UiKit.bindHover(button: GuiButton, onHover: ((boolean) -> ())?): () -> 
 		TweenService:Create(button, TweenInfo.new(BUTTON_HOVER_SECONDS, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Rotation = if active then restTilt + BUTTON_HOVER_TILT else restTilt,
 		}):Play()
+
+		for label, rest in labels do
+			TweenService:Create(label, TweenInfo.new(BUTTON_HOVER_SECONDS), {
+				TextColor3 = if active then accent :: Color3 else rest,
+			}):Play()
+		end
 
 		if onHover ~= nil then
 			onHover(active)

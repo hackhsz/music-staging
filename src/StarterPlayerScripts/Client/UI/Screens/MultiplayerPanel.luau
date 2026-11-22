@@ -28,7 +28,12 @@ export type MultiplayerPanel = typeof(setmetatable({} :: Fields, MultiplayerPane
 
 function MultiplayerPanel.new(gui: ScreenGui?): MultiplayerPanel
 	local statusLabel = UiKit.authored(gui, "Status", "TextLabel")
-	local modeButton = UiKit.authored(gui, "Actions.ModeButton", "GuiButton")
+	-- The solo/duo switch sits in the PLAY menu (StarterGui.Stages), or in the lobby's Actions.
+	local stages = if gui ~= nil and gui.Parent ~= nil then UiKit.authoredGui(gui.Parent, "Stages") else nil
+	local inMenu = if stages ~= nil then stages:FindFirstChild("ModeButton", true) else nil
+	local modeButton = if inMenu ~= nil and inMenu:IsA("GuiButton")
+		then inMenu
+		else UiKit.authored(gui, "Actions.ModeButton", "GuiButton")
 
 	local fields: Fields = {
 		statusLabel = statusLabel,

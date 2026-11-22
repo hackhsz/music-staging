@@ -80,7 +80,7 @@ function ProgressController._popupsFor(self: ProgressController, summary: any): 
 	end
 
 	for _, daily in if type(summary.dailyCompleted) == "table" then summary.dailyCompleted else {} do
-		table.insert(popups, self:_toast(string.upper(tostring(daily.name)), ("+%d"):format(tonumber(daily.reward) or 0)))
+		table.insert(popups, self:_toast(string.upper(tostring(daily.name)), ("CLAIM +%d"):format(tonumber(daily.reward) or 0)))
 	end
 
 	return popups

@@ -17,6 +17,9 @@ local CosmeticsCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("C
 local ShopCatalog = require(Shared:WaitForChild("Catalogs"):WaitForChild("ShopCatalog"))
 local ScoreSummary = require(Shared:WaitForChild("ScoreSummary"))
 
+-- ClaimReward ids for the day's challenges: "daily:" then the challenge id.
+local DAILY_REWARD_PATTERN = "^daily:(.+)$"
+
 local RewardService = {}
 RewardService.__index = RewardService
 
@@ -363,25 +366,23 @@ function RewardService:applySongSummary(player: Player, summary: any)
 		summary.nextGoal = { perfects = perfects, grade = nextGrade }
 	end
 
-	-- Daily challenges (retention). Reset on a new UTC day, fold this run in, and
-	-- auto-grant coins for any challenge whose target was just hit.
+	-- Daily challenges (retention). This run is folded in; a challenge it finishes waits to
+	-- be claimed in the Quests window (see _claimDaily).
 	local dayKey = DailyChallenges.dayKey(os.time())
-	if type(profile.daily) ~= "table" or profile.daily.key ~= dayKey then
-		profile.daily = { key = dayKey, progress = DailyChallenges.emptyProgress(), rewarded = {} }
+	local todays = DailyChallenges.rollDaily(dayKey)
+	local finishedBefore = {}
+
+	self:_turnDaily(player, profile, dayKey)
+
+	for _, challenge in todays do
+		finishedBefore[challenge.id] = DailyChallenges.isComplete(challenge, profile.daily.progress)
 	end
 
 	DailyChallenges.advance(profile.daily.progress, summary)
 
 	local completedDaily = {}
-	for _, challenge in DailyChallenges.rollDaily(dayKey) do
-		if DailyChallenges.isComplete(challenge, profile.daily.progress) and not profile.daily.rewarded[challenge.id] then
-			profile.daily.rewarded[challenge.id] = true
-			profile.softCurrency += challenge.reward
-			table.insert(rewards, {
-				type = "soft_currency",
-				amount = challenge.reward,
-				reason = "daily:" .. challenge.id,
-			})
+	for _, challenge in todays do
+		if not finishedBefore[challenge.id] and DailyChallenges.isComplete(challenge, profile.daily.progress) then
 			table.insert(completedDaily, { name = challenge.name, reward = challenge.reward })
 		end
 	end
@@ -404,6 +405,62 @@ function RewardService:applySongSummary(player: Player, summary: any)
 	return rewards
 end
 
+-- Starts a fresh day of challenges. Anything finished yesterday and never claimed is paid
+-- here, so a player who forgot the Quests window loses nothing.
+function RewardService:_turnDaily(player: Player, profile: any, dayKey: number)
+	local daily = profile.daily
+
+	if type(daily) == "table" and daily.key == dayKey then
+		return
+	end
+
+	if type(daily) == "table" and type(daily.key) == "number" and type(daily.progress) == "table" then
+		local rewarded = if type(daily.rewarded) == "table" then daily.rewarded else {}
+
+		for _, challenge in DailyChallenges.rollDaily(daily.key) do
+			if DailyChallenges.isComplete(challenge, daily.progress) and rewarded[challenge.id] ~= true then
+				profile.softCurrency += challenge.reward
+			end
+		end
+	end
+
+	profile.daily = { key = dayKey, progress = DailyChallenges.emptyProgress(), rewarded = {} }
+	self.playerDataService:markDirty(player)
+end
+
+-- Pays one of today's challenges once its target is reached. The server checks the
+-- challenge is today's, finished and not paid yet.
+function RewardService:_claimDaily(player: Player, profile: any, challengeId: string)
+	local dayKey = DailyChallenges.dayKey(os.time())
+
+	self:_turnDaily(player, profile, dayKey)
+
+	for _, challenge in DailyChallenges.rollDaily(dayKey) do
+		if challenge.id ~= challengeId then
+			continue
+		end
+
+		if not DailyChallenges.isComplete(challenge, profile.daily.progress) then
+			return false, "not_complete", nil
+		elseif profile.daily.rewarded[challenge.id] == true then
+			return false, "already_claimed", nil
+		end
+
+		profile.daily.rewarded[challenge.id] = true
+		profile.softCurrency += challenge.reward
+		self.playerDataService:markDirty(player)
+
+		return true, "claimed", {
+			type = "soft_currency",
+			amount = challenge.reward,
+			reason = "daily:" .. challenge.id,
+			softCurrency = profile.softCurrency,
+		}
+	end
+
+	return false, "unknown_reward", nil
+end
+
 function RewardService:claimReward(player: Player, rewardId: string, now: number?)
 	local profile = self.playerDataService:get(player)
 
@@ -419,6 +476,12 @@ function RewardService:claimReward(player: Player, rewardId: string, now: number
 
 	if tier ~= nil then
 		return self:_claimTimeReward(player, profile, tier)
+	end
+
+	local dailyId = string.match(rewardId, DAILY_REWARD_PATTERN)
+
+	if dailyId ~= nil then
+		return self:_claimDaily(player, profile, dailyId)
 	end
 
 	local item = EasterEggs.getItem(rewardId)
@@ -634,7 +697,9 @@ function RewardService:setRoadSnapshot(player: Player): { [string]: any }?
 		return nil
 	end
 
-	return { season = ShopCatalog.SetRoad.season, step = currentSetRoad(profile).step }
+	local road = currentSetRoad(profile)
+
+	return { season = ShopCatalog.SetRoad.season, step = road.step, freeClaimed = road.freeClaimed == true }
 end
 
 return RewardService

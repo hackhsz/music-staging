@@ -11,6 +11,46 @@ place; until then everything sits under Unreleased.
 
 ### Changed
 
+- Style, Loadout and Shop are in the album style too: the print panel and header, slanted pink and dark tabs and buttons, plum cards with a pink frame on the picked one, and the moving background. Their layouts and behaviour are unchanged.
+
+- The PLAY menu is rebuilt in the album style: two mode covers (Stage Challenge, Free Play), the who-with button and a big PLAY button. Tapping a cover now picks the mode and PLAY starts it; before, tapping a mode started it straight away. The menu rises in like the other windows instead of flying in from the side.
+
+- Daily challenges are claimed now: a finished one waits in Quests with a CLAIM button instead of paying by itself, the Quests button's dot shows while one is waiting, and anything left unclaimed is paid when the day turns.
+- Quests is redesigned: Daily is a stack of challenge rows (each with its own icon) beside the streak and the first-song bonus, and Achievements is a road of medals with a detail card. The road is built from `AchievementCatalog` in order, so a new entry there appears as the next stop (`goal` for its line, `badge` optional).
+
+- Rewards is rebuilt in the album style: the eight play-time gifts as two rows of tiles with their own art, a check on the claimed ones, a lock and countdown on the ones still to come, a pink frame on one ready to claim, and how long you have played this visit.
+
+- The tiles inside the album windows (This Week, Travel, Stage Pass, Quests) carry print texture now: halftone dots in two corners and faint diagonal stripes, so the flat panels no longer look empty.
+
+- Travel is rebuilt in the album style: a map of the main island with a numbered pin per place, the places as a numbered list with a picture and a short tag, and a detail panel with what is there. Each place's picture, tag, pin and list live in `IslandCatalog`, and each area names its own map; the Sky Islands tab has its map of the six stalls. Only the closest place reads YOU ARE HERE.
+- The Stage Pass window is rebuilt in the album style: week markers, the final reward shown up front, what the pass row adds, and a preview panel. Tapping a reward now previews it and the preview's button claims it.
+
+- More motion in the album menus: progress bars fill up when a window opens, and parts keep moving, gently (flames flicker, coins spin, tags pulse, art breathes; set with a `Life` attribute on the instance). The backgrounds are busier: more and brighter drifting pieces that twinkle, and an equalizer bouncing along the bottom edge.
+
+- Menu windows are alive: faint notes, sparks and print bits drift up behind the content and a record turns in the corner (a window opts in with its `Ambience` attribute; off under Reduced Motion). Windows open with a small settle, the lobby's card, side column and dock leave and return one after another, and PLAY drops and rises with the dock instead of flying in from the side.
+
+- This Week has five full views behind its side tabs, in a quieter shell (smaller tabs, filled tiles instead of white outlines): League (tier ladder, weekly payouts, time left, your best-five score, the board with a PROMOTION ZONE line), Stage Pass (a six-tier window of the real track with claimed, claimable and locked rewards; tapping it or the button opens the Stage Pass window), Daily (today's challenges, the streak with seven markers, the first-song bonus, ALL QUESTS) and Shop (the Set Road as the weekly feature and the four featured offers; everything there opens the shop).
+
+- This Week is the Cover Story board: tabs on the left edge outside the panel (Live Show, League, Stage Pass, plus Daily and Shop as links to those windows), and on the Live view the player's card, a league summary, a big pink hero for the next event, UP NEXT and the streak. Daily challenges and shop picks left the board, and Quests no longer shares a tab strip with it.
+- The board's events are data now: `WeekCatalog.Events` lists each one (weekly by weekday and hour, or a one-off by start time), the hero shows the next featured one and UP NEXT the two after it. Today that is the Saturday Live Show, the Monday league results and the Stage Pass season end.
+- Quests is in the album style.
+
+- Settings and Group Rewards keep their proportions on phones: the panel is one whole image that stretches with the window, and the settings rows are a share of the page height instead of a fixed pixel size.
+
+- Settings and Group Rewards are in the album style: a print panel with a gear or people header, off-white icon tiles and title strips, slanted pink and dark buttons, sliders with a vinyl knob, and a photocard for the daily gift with a drawn gift box. Menu windows now rise in from below without the bounce and drop away on close.
+
+- New loading screen in the album style: a Dance Dance Step logo that pulses on the beat, a print background, and a striped bar with a spinning vinyl riding its leading edge. The 3x3 tile animation is gone. The screen now lives in `ReplicatedFirst.Loading` so it shows from the first frame, stays at least 4.5 s, pops its parts in one by one over a drifting background, and leaves with a slanted pink wipe instead of a fade.
+
+- Lobby buttons show a pink dot when something waits: Shop (free Set Road step), Pass (a tier to claim), Quests (a challenge finished since you last looked) and Events (the Live Show is on). The profile card's coin count and + button are bigger.
+
+- The lobby HUD moves: a button's icon pops and tilts under the pointer, a pink rim lights around the hovered tile, a small hop travels along each row of icons every few seconds and notification dots pulse (`UI/HudLife`). PLAY is still until hovered: then its vinyl turns and the card slides out. Tiles, the profile card and PLAY cast a soft shadow.
+- Lobby HUD art is the K-pop album set: black album-sleeve tiles with pink prints, each a background with its own icon and name layered on top; PLAY is a photocard sliding from a record sleeve with a vinyl that turns, and the card slides out on hover; the profile is one album card (rank tile, stage line, name, XP bar, coins, pink plus).
+- Lobby HUD in the sticker style of the Miro wireframes: slanted black tiles with white icons, a hot-pink offset edge and a halftone texture; an off-white PLAY card; a profile card with the stage number tile, "STAGE 1 · TRAINEE I", the name in pink and the XP numbers on the bar, beside a coin tag. Sticker tiles turn their name pink on hover (`HoverAccent` attribute).
+- Button hover is calmer everywhere: a smooth grow to 106% with no tilt and no colour swap; a menu-rail button only lights while its window is open. Lobby button labels sit inside the circles, and PLAY has room above the bottom row.
+- New PLAY pill and one shared glossy base for every round lobby and menu-rail button, so they all match (the old top-row buttons were a darker navy).
+- Lighter lobby: Songs, Shop and Style in a column on the middle left; Settings, Events and Group beside the profile in the free right side of Roblox's top bar; Quests, Pass, Rewards and Travel along the bottom centre with PLAY just above them. The profile is one slim pill: round avatar, rank, name, XP bar, coins and the + button. Roblox's top-left menu and chat are untouched, and on phones the thumbstick and jump button corners stay free.
+- Style opens one window with Wardrobe and Loadout tabs, Events one with This Week and Quests tabs; the tabs replace those windows' title tags, and the menu's side rail matches the four lobby buttons.
+- PLAY opens the mode menu (Stage Challenge, Free Play, Duels) instead of starting straight away; picking a mode starts it, the Solo/Duo switch lives in that menu, and while it is open every window closes and the rest of the lobby steps aside.
 - Settings rebuilt to a GPT mockup: the title sits inside the window instead of a tab sticking out, a bigger close button, icons on the section tabs, and each setting is a card with a round icon badge, a thick pink slider and its value in a dark pill.
 - This Week board, Lobby HUD and Stage Pass rebuilt to GPT mockups (in the Encore UI Brief): a bigger left rail with HOME first, a wider SOLO PLAY aligned over PLAY, the Stage Pass season line shows when the season ends. Quest rows fill the Quests window, and Rewards gift tiles stack time, icon, reward and timer top to bottom with the code field across the bottom.
 - Robux purchases are granted on the server: dev products go through ProcessReceipt (each receipt granted once, saved before Roblox is told), and 2x Beat Coins and 2x XP passes now double song coins and XP. Sales go live per offer once its pass or product id is filled in `ShopCatalog`; VIP and the song pack stay coming soon.

@@ -251,6 +251,9 @@ local week = WeekController.new({
 	openPass = function()
 		hud.stagePass:setVisible(true)
 	end,
+	openQuests = function()
+		quests:open()
+	end,
 })
 local wardrobe = WardrobeController.new({
 	remotes = remotes,

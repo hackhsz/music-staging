@@ -1,8 +1,15 @@
 local AchievementCatalog = {}
 
+-- The medal an achievement with no badge of its own wears.
+AchievementCatalog.DefaultBadge = "rbxassetid://96648168093821"
+
+-- In road order: the Quests window lays these out as a road of medals, so a new entry here
+-- shows up as the next stop. goal is the one line under its name; badge is optional.
 AchievementCatalog.Achievements = {
 	{
 		id = "first-perfect",
+		goal = "Land 1 Perfect",
+		badge = "rbxassetid://107833709569054",
 		glyph = "⭐",
 		icon = "Icon_QuestPerfect",
 		displayName = "First Perfect",
@@ -13,6 +20,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "full-combo-metronome",
+		goal = "Reach an 8 combo",
+		badge = "rbxassetid://134395177330634",
 		glyph = "🔗",
 		icon = "Icon_QuestCombo",
 		displayName = "Metronome Full Combo",
@@ -22,6 +31,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "first-show-complete",
+		goal = "Finish 1 song",
+		badge = "rbxassetid://87059342754541",
 		glyph = "🎤",
 		icon = "Icon_QuestPlay",
 		displayName = "First Show Complete",
@@ -31,6 +42,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "rank-b-practice",
+		goal = "Get a B on any song",
+		badge = "rbxassetid://102020212130926",
 		glyph = "🅱️",
 		icon = "Icon_QuestScore",
 		displayName = "Rank B Practice",
@@ -40,6 +53,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "rank-a-spotlight",
+		goal = "Get an A on any song",
+		badge = "rbxassetid://99055020763023",
 		glyph = "🅰️",
 		icon = "Icon_QuestScore",
 		displayName = "Rank A Spotlight",
@@ -49,6 +64,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "first-ten-perfects",
+		goal = "Land 10 Perfects",
+		badge = "rbxassetid://79805620183183",
 		glyph = "💯",
 		icon = "Icon_QuestPerfect",
 		displayName = "First Ten Perfects",
@@ -58,6 +75,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "candy-pop-clear",
+		goal = "Clear the song Candy Pop",
+		badge = "rbxassetid://97962117547671",
 		glyph = "🍬",
 		icon = "Icon_QuestClear",
 		displayName = "Candy Pop Clear",
@@ -69,6 +88,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "neon-idol-first-clear",
+		goal = "Clear the song Neon Idol",
+		badge = "rbxassetid://108026883905795",
 		glyph = "💡",
 		icon = "Icon_QuestClear",
 		displayName = "Neon Idol First Clear",
@@ -79,6 +100,8 @@ AchievementCatalog.Achievements = {
 	},
 	{
 		id = "two-song-collector",
+		goal = "Finish 2 different songs",
+		badge = "rbxassetid://87271501902200",
 		glyph = "📀",
 		icon = "Icon_QuestPlay",
 		displayName = "Two Song Collector",

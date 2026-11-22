@@ -159,6 +159,8 @@ function RewardsController._draw(self: RewardsController)
 	local played = Workspace:GetServerTimeNow() - startedAt
 	local anyReady = false
 
+	self.deps.hud.rewards:setPlayed(("PLAYED %d MIN THIS VISIT"):format(math.max(played, 0) // 60))
+
 	for _, tier in TimeRewards.Tiers do
 		local left = TimeRewards.secondsLeft(tier, played)
 

@@ -392,6 +392,7 @@ function ShopController._onProfileSync(self: ShopController, payload: any)
 	self:_setBalance(payload.softCurrency or 0)
 	self.deps.hud.menu:updateDaily(payload.daily)
 	self.deps.hud.menu:updateStats(payload.stats)
+	self.deps.hud.menu:setShopReady(type(payload.setRoad) == "table" and payload.setRoad.freeClaimed == false)
 	self:_refresh()
 end
 

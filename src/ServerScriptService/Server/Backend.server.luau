@@ -132,6 +132,7 @@ local function buildDailySnapshot(profile: any)
 			name = challenge.name,
 			glyph = challenge.glyph,
 			icon = challenge.icon,
+			art = challenge.art,
 			value = math.min(progress[challenge.metric] or 0, challenge.target),
 			target = challenge.target,
 			reward = challenge.reward,

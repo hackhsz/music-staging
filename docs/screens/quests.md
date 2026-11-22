@@ -1,19 +1,23 @@
 # Quests
 
-**What it is.** Two tabs, DAILY and ACHIEVEMENTS (each with a done count), a strip with the player's rank and XP, and the quests as full-width rows with progress bars and their reward.
+**What it is.** Two tabs beside the title, DAILY and ACHIEVEMENTS (each with a done count). Daily: a TODAY bar (done count, coins claimed today, time to the reset), the three challenges as rows with their own icon, a progress bar and either the reward, a CLAIM button or a claimed mark, the streak with seven markers, the first-song bonus and the rank strip. Achievements: a summary, a detail card for the picked achievement (it opens on the one closest to done) and a scrolling road of medals, one per `AchievementCatalog` entry in order, three to a row, snaking.
 
 **Where.** `StarterGui.Menu.Root.Holder.Quests`. Bound by `UI/Screens/QuestsPanel.luau`; `QuestController` builds the rows from the profile.
 
-**Layout.** The same shell as the shop: a standalone `Panel` at 1.35:1 (2:1 on touch), never larger than 980 x 740, header row (title, X) at 0.07. The tab bar at 0.135: two `Pill` tabs (`Primary` while open) with a `Count` each, and `ResetLabel` (NEW CHALLENGES IN ...) on the right. `LevelCard`, a `Card` strip (0.025, 0.225, 0.95 x 0.16): the badge on its pedestal, YOUR LEVEL and the level, the XP bar and label, the hint on the right. `Grid` fills 0.405 to 0.98 with rows at 10:1.
+**Layout.** Album style (designs in `Encore UI Brief/screenshots/mockup-window-quests-*.png`). No style-sheet tags are used in this window.
 
 **Names the code needs** (under `Quests`).
 
 | Path | Notes |
 | --- | --- |
-| `Tabs.Tab1..` (each with `Count`), `CloseButton` | tab keys are `daily` and `achievements` |
-| `Grid.List`, `Grid.List.RowTemplate` (rows have `Bar.Fill`) | |
-| `LevelBadge.Glyph`, `DetailName`, `XpLabel`, `XpBar.Fill`, `ResetLabel` | level, XP and reset timer |
+| `Tabs.Tab1..2` (each with `Count`), `CloseButton` | |
+| `Daily.TodayBar.{DoneLabel, CoinsLabel}`, `Daily.ResetChip.Label` | |
+| `Daily.Row1..3` (`IconTile.Icon`, `DoneMark`, `NameLabel`, `Bar.Fill`, `ProgressLabel`, `RewardChip`, `RewardLabel`, `ClaimButton.Label`) | a row and its button are lit while the reward waits |
+| `Daily.Streak` (`ValueLabel`, `Dot1..7`), `Daily.Bonus.ValueLabel`, `Daily.Rank` (`NumberLabel`, `NameLabel`, `XpLabel`, `Bar.Fill`) | |
+| `Achievements.Summary` (`CountLabel`, `Bar.Fill`) | |
+| `Achievements.Detail` (`Caption.Label`, `Badge`, `NameLabel`, `GoalLabel`, `Bar.Fill`, `ProgressLabel`, `Reward.{Icon, Label}`) | |
+| `Achievements.Road.Canvas` with `MedalTemplate` (`Badge`, `Lock`, `NameLabel`, `RewardLabel`) and `LineTemplate` | the panel clones a medal and a stretch of road per achievement and sizes the canvas to fit |
 
-**States.** Daily or achievements tab; row in progress or done.
+**States.** Daily or achievements tab. A challenge is in progress, claimable (CLAIM, lit) or claimed. An achievement is earned, in progress or locked; one is picked for the detail card.
 
-**Still needed.** The requirements doc (3.1) lists a claimable state for daily quests; `QuestsPanel.luau` has no claim code, so rewards are not claimed here.
+**Still needed.** Nothing known. A challenge left unclaimed is paid by the server when the day turns (`RewardService._turnDaily`).

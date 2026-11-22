@@ -1,16 +1,27 @@
 --!strict
 local CollectionService = game:GetService("CollectionService")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local MenuScreen = require(script.Parent.MenuScreen)
 local UiKit = require(script.Parent.Parent.UiKit)
 
-local SLIDE_SECONDS = 0.3
+local SLIDE_IN_SECONDS = 0.42
+local SLIDE_OUT_SECONDS = 0.22
+-- The card, the side column and the dock go one after another, not as one block.
+local SLIDE_STAGGER_SECONDS = 0.06
 -- Retry and Next close the results a moment before the run starts; the menu waits
 -- this long so it does not slide in just to slide out again.
 local SHOW_DELAY_SECONDS = 0.6
-local RAIL_OFFSCREEN = UDim2.fromScale(-0.2, 0)
+-- The rail is the dock along the bottom, between the Roblox thumbstick and jump button
+-- (Roblox keeps the top-left for its menu and chat); it slides down out of the way.
+local RAIL_OFFSCREEN = UDim2.fromScale(0, 0.3)
+-- The middle-left column of buttons (Side), where Roblox suggests frequent buttons go.
+local SIDE_OFFSCREEN = UDim2.fromScale(-0.25, 0)
+-- Roblox's top bar leaves its right side to the game; the profile card rises into it, its top
+-- this far below the screen edge, level with Roblox's own buttons.
+local TOP_BAR_MARGIN = 10
 -- Far enough to carry the Card's TopButtons, which sit left of the column, off too.
 local COLUMN_OFFSCREEN = UDim2.fromScale(0.5, 0)
 local DONE_TEXT = "DONE"
@@ -38,8 +49,11 @@ type Fields = {
 	rail: GuiObject?,
 	column: GuiObject?,
 	railHome: UDim2,
+	side: GuiObject?,
+	sideHome: UDim2,
 	columnHome: UDim2,
 	levelLabel: TextLabel?,
+	rankNumber: TextLabel?,
 	nameLabel: TextLabel?,
 	avatar: ImageLabel?,
 	coinLabel: TextLabel?,
@@ -102,25 +116,18 @@ local function withCommas(value: number): string
 	return (formatted:gsub("^,", ""))
 end
 
--- A rail button glows with its HoverImage attribute under the pointer. A sprite
--- name glows only atlas art: on a whole-image button it would stretch an atlas
--- cut of a different shape over it.
 local function bindNavHover(button: GuiButton?)
-	if button == nil or not button:IsA("ImageButton") then
-		return
-	end
-
-	local rest = UiKit.imageState(button)
-	local glow = button:GetAttribute("HoverImage")
-
-	if type(glow) ~= "string" or (rest.size == Vector2.zero and not glow:match("^rbxassetid://")) then
+	if button ~= nil then
 		UiKit.bindHover(button)
-		return
 	end
+end
 
-	UiKit.bindHover(button, function(active: boolean)
-		UiKit.setImage(button, if active then glow else rest)
-	end)
+-- Lobby buttons are found by name wherever they sit, so moving one in
+-- Studio does not break its binding.
+local function findButton(gui: Instance?, name: string): GuiButton?
+	local found = if gui ~= nil then gui:FindFirstChild(name, true) else nil
+
+	return if found ~= nil and found:IsA("GuiButton") then found else nil
 end
 
 local function bindButton(button: GuiButton?, callback: () -> ())
@@ -129,8 +136,12 @@ local function bindButton(button: GuiButton?, callback: () -> ())
 	end
 end
 
-local function tween(instance: Instance, goal: { [string]: any }): Tween
-	local playing = TweenService:Create(instance, TweenInfo.new(SLIDE_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), goal)
+local function tween(instance: Instance, goal: { [string]: any }, entering: boolean, order: number): Tween
+	local info = if entering
+		then TweenInfo.new(SLIDE_IN_SECONDS, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0, false, order * SLIDE_STAGGER_SECONDS)
+		else TweenInfo.new(SLIDE_OUT_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, order * SLIDE_STAGGER_SECONDS)
+	local playing = TweenService:Create(instance, info, goal)
+
 	playing:Play()
 
 	return playing
@@ -144,7 +155,6 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 	local card = UiKit.authored(column, "Card", "GuiObject")
 	local daily = UiKit.child(column, "Daily", "GuiObject")
 	local stats = UiKit.authored(column, "Stats", "GuiObject")
-	local topButtons = UiKit.authored(card, "TopButtons", "GuiObject")
 	local rankStrip = UiKit.authored(card, "RankStrip", "GuiObject")
 	local coinGain = UiKit.authored(card, "CoinGain", "TextLabel")
 
@@ -152,8 +162,13 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 		rail = rail,
 		column = column,
 		railHome = if rail ~= nil then rail.Position else UDim2.new(),
-		columnHome = if column ~= nil then column.Position else UDim2.new(),
+		side = UiKit.child(gui, "Side", "GuiObject"),
+		sideHome = UDim2.new(),
+		columnHome = if column ~= nil
+			then UDim2.new(column.Position.X.Scale, column.Position.X.Offset, 0, TOP_BAR_MARGIN - GuiService:GetGuiInset().Y)
+			else UDim2.new(),
 		levelLabel = UiKit.authored(card, "LevelLabel", "TextLabel"),
+		rankNumber = UiKit.child(card, "RankNumber", "TextLabel"),
 		nameLabel = UiKit.authored(card, "NameLabel", "TextLabel"),
 		avatar = UiKit.authored(card, "AvatarFrame.Avatar", "ImageLabel"),
 		coinLabel = UiKit.authored(card, "CoinLabel", "TextLabel"),
@@ -171,20 +186,20 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 		rankShare = nil,
 		rankShareShown = nil,
 		addCoinsButton = UiKit.authored(card, "AddCoinsButton", "GuiButton"),
-		homeButton = UiKit.authored(buttons, "HomeButton", "GuiButton"),
-		songButton = UiKit.authored(buttons, "SongButton", "GuiButton"),
-		loadoutButton = UiKit.authored(buttons, "LoadoutButton", "GuiButton"),
-		shopButton = UiKit.authored(buttons, "ShopButton", "GuiButton"),
-		wardrobeButton = UiKit.authored(buttons, "WardrobeButton", "GuiButton"),
-		questsButton = UiKit.authored(buttons, "QuestsButton", "GuiButton"),
-		islandsButton = UiKit.authored(topButtons, "IslandsButton", "GuiButton"),
-		settingsButton = UiKit.authored(topButtons, "SettingsButton", "GuiButton"),
+		homeButton = findButton(gui, "HomeButton"),
+		songButton = findButton(gui, "SongButton"),
+		loadoutButton = findButton(gui, "LoadoutButton"),
+		shopButton = findButton(gui, "ShopButton"),
+		wardrobeButton = findButton(gui, "WardrobeButton"),
+		questsButton = findButton(gui, "QuestsButton"),
+		islandsButton = findButton(gui, "IslandsButton"),
+		settingsButton = findButton(gui, "SettingsButton"),
 		windows = windows,
-		giftButton = UiKit.authored(topButtons, "GiftButton", "GuiButton"),
-		giftDot = UiKit.authored(topButtons, "GiftButton.Dot", "GuiObject"),
-		passButton = UiKit.authored(topButtons, "PassButton", "GuiButton"),
-		communityButton = UiKit.authored(topButtons, "CommunityButton", "GuiButton"),
-		communityDot = UiKit.authored(topButtons, "CommunityButton.Dot", "GuiObject"),
+		giftButton = findButton(gui, "GiftButton"),
+		giftDot = UiKit.child(findButton(gui, "GiftButton"), "Dot", "GuiObject"),
+		passButton = findButton(gui, "PassButton"),
+		communityButton = findButton(gui, "CommunityButton"),
+		communityDot = UiKit.child(findButton(gui, "CommunityButton"), "Dot", "GuiObject"),
 		daily = daily,
 		dailyRows = {},
 		dailyHasData = false,
@@ -199,6 +214,14 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 		slideToken = 0,
 	}
 	local self = setmetatable(fields, SideMenu)
+
+	if fields.side ~= nil then
+		fields.sideHome = fields.side.Position
+	end
+
+	if column ~= nil then
+		column.Position = fields.columnHome
+	end
 
 	for index = 1, DAILY_ROWS do
 		local row = UiKit.authored(daily, "Row" .. index, "GuiObject")
@@ -224,6 +247,7 @@ function SideMenu.new(gui: ScreenGui?, windows: MenuScreen.MenuScreen?): SideMen
 	} do
 		bindNavHover(button)
 	end
+
 
 	for _, button in { fields.giftButton, fields.communityButton, fields.addCoinsButton, fields.passButton } do
 		if button ~= nil then
@@ -312,7 +336,11 @@ function SideMenu.updateStage(self: SideMenu, stages: any)
 	local following = if type(stages.ranks) == "table" then stages.ranks[(tonumber(stages.rank) or 0) + 1] else nil
 
 	if self.levelLabel ~= nil then
-		self.levelLabel.Text = tostring(stages.name)
+		self.levelLabel.Text = ("STAGE %d · %s"):format(tonumber(stages.rank) or 1, string.upper(tostring(stages.name)))
+	end
+
+	if self.rankNumber ~= nil then
+		self.rankNumber.Text = tostring(tonumber(stages.rank) or 1)
 	end
 
 	if self.rankNext ~= nil then
@@ -545,6 +573,30 @@ function SideMenu.setCommunityReady(self: SideMenu, ready: boolean)
 	end
 end
 
+local function setDot(button: GuiButton?, on: boolean)
+	local dot = UiKit.child(button, "Dot", "GuiObject")
+
+	if dot ~= nil then
+		dot.Visible = on
+	end
+end
+
+function SideMenu.setQuestsReady(self: SideMenu, ready: boolean)
+	setDot(self.questsButton, ready)
+end
+
+function SideMenu.setPassReady(self: SideMenu, ready: boolean)
+	setDot(self.passButton, ready)
+end
+
+function SideMenu.setShopReady(self: SideMenu, ready: boolean)
+	setDot(self.shopButton, ready)
+end
+
+function SideMenu.setEventLive(self: SideMenu, live: boolean)
+	setDot(self.homeButton, live)
+end
+
 function SideMenu.bindCommunity(self: SideMenu, callback: () -> ())
 	bindButton(self.communityButton, callback)
 end
@@ -590,8 +642,10 @@ function SideMenu.setCovered(self: SideMenu, covered: boolean)
 
 	self.covered = covered
 	self.slideToken += 1
-	self:_slide(self.rail, self.railHome, RAIL_OFFSCREEN)
-	self:_slide(self.column, self.columnHome, COLUMN_OFFSCREEN)
+
+	self:_slide(self.column, self.columnHome, COLUMN_OFFSCREEN, 0)
+	self:_slide(self.side, self.sideHome, SIDE_OFFSCREEN, 1)
+	self:_slide(self.rail, self.railHome, RAIL_OFFSCREEN, 2)
 end
 
 -- showDelay holds the slide-in back (Retry's flicker guard); a closing window
@@ -622,13 +676,14 @@ function SideMenu._refresh(self: SideMenu, showDelay: number?)
 
 	task.delay(if shown then showDelay or SHOW_DELAY_SECONDS else 0, function()
 		if self.slideToken == token then
-			self:_slide(self.rail, self.railHome, RAIL_OFFSCREEN)
-			self:_slide(self.column, self.columnHome, COLUMN_OFFSCREEN)
+			self:_slide(self.column, self.columnHome, COLUMN_OFFSCREEN, 0)
+			self:_slide(self.side, self.sideHome, SIDE_OFFSCREEN, 1)
+			self:_slide(self.rail, self.railHome, RAIL_OFFSCREEN, 2)
 		end
 	end)
 end
 
-function SideMenu._slide(self: SideMenu, gui: GuiObject?, home: UDim2, away: UDim2)
+function SideMenu._slide(self: SideMenu, gui: GuiObject?, home: UDim2, away: UDim2, order: number)
 	if gui == nil then
 		return
 	end
@@ -636,7 +691,7 @@ function SideMenu._slide(self: SideMenu, gui: GuiObject?, home: UDim2, away: UDi
 	if self.shown and not self.covered then
 		gui.Visible = true
 		gui.Position = home + away
-		tween(gui, { Position = home }).Completed:Connect(function()
+		tween(gui, { Position = home }, true, order).Completed:Connect(function()
 			self:_showGains()
 		end)
 		return
@@ -644,7 +699,7 @@ function SideMenu._slide(self: SideMenu, gui: GuiObject?, home: UDim2, away: UDi
 
 	local token = self.slideToken
 
-	tween(gui, { Position = home + away }).Completed:Connect(function()
+	tween(gui, { Position = home + away }, false, order).Completed:Connect(function()
 		if self.slideToken == token then
 			gui.Visible = false
 		end

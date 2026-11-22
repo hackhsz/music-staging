@@ -1,103 +1,146 @@
 --!strict
-local TweenService = game:GetService("TweenService")
-
+local MenuLife = require(script.Parent.Parent.MenuLife)
 local MenuScreen = require(script.Parent.MenuScreen)
 local UiKit = require(script.Parent.Parent.UiKit)
 
 local WINDOW = "quests"
-local TAB_KEYS = { "daily", "achievements" }
-local DONE_TRANSPARENCY = 0.45
--- The tag UIStyles' Design sheet keys a finished card's look on.
-local DONE_TAG = "Done"
-local ROW_GAP = 8
--- A styled (Pill) tab shows it is picked with this tag.
-local FILL_TWEEN = TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local TABS = { "Daily", "Achievements" }
+local DAILY_ROWS = 3
+local STREAK_DOTS = 7
+-- The medal road: this many medals to a row, each row this share of the road's height. The
+-- road snakes, so every other row runs right to left.
+local MEDALS_PER_ROW = 3
+local ROW_SHARE = 0.36
+local MEDAL_INSET = 0.17
+local LINE_PIXELS = 6
+local CAPTIONS = { earned = "EARNED", progress = "NEXT UP", locked = "LOCKED" }
+local DIM = 0.55
 
-export type Quest = {
-	glyph: string,
-	icon: string?,
+-- state: "progress", "claim" (finished, reward waiting) or "done" (reward paid).
+export type DailyQuest = {
+	id: string,
 	name: string,
-	progressText: string,
+	icon: string,
+	progress: string,
 	fraction: number,
-	rewardText: string,
-	rewardGlyph: string?,
-	rewardIcon: string?,
-	done: boolean,
+	reward: string,
+	state: string,
 }
-
-export type Level = { level: number, name: string, into: number, need: number, maxed: boolean }
-
-type Tab = { button: GuiButton, key: string, count: TextLabel? }
+export type Today = { done: string, coins: string, streak: string, lit: number, bonus: string }
+-- state: "earned", "progress" or "locked".
+export type Achievement = {
+	id: string,
+	name: string,
+	goal: string,
+	progress: string,
+	fraction: number,
+	reward: string,
+	rewardIcon: string?,
+	badge: string,
+	state: string,
+}
+export type Level = { level: number, name: string, maxed: boolean, into: number, need: number }
 
 type Fields = {
 	menu: MenuScreen.MenuScreen,
-	tabs: { Tab },
-	tabImage: string?,
-	pickedTabImage: string?,
-	list: ScrollingFrame?,
-	rowTemplate: GuiObject?,
-	rows: { GuiObject },
-	levelGlyph: TextLabel?,
-	levelName: TextLabel?,
-	xpLabel: TextLabel?,
-	xpFill: GuiObject?,
-	resetLabel: TextLabel?,
-	quests: { [string]: { Quest } },
-	tab: string,
+	window: GuiObject?,
+	tab: number,
+	daily: { DailyQuest },
+	achievements: { Achievement },
+	medals: { GuiObject },
+	lines: { GuiObject },
+	picked: string?,
+	onClaim: ((questId: string) -> ())?,
 }
 
--- The Quests window, authored in StarterGui.Menu's Quests: the daily challenges
--- and the achievements as rows with a progress bar, and the player's level and XP
--- on the right. Drawing only; QuestController builds the rows from the profile.
+-- The Quests window, authored in StarterGui.Menu's Quests. Daily: today's challenges as rows
+-- with a claim button, the streak and the first-song bonus. Achievements: a road of medals,
+-- one per achievement in the catalog's order, that grows by itself as achievements are added.
+-- Drawing only; QuestController builds the rows and sends the claims.
 local QuestsPanel = {}
 QuestsPanel.__index = QuestsPanel
 
 export type QuestsPanel = typeof(setmetatable({} :: Fields, QuestsPanel))
 
-local function attribute(instance: Instance?, name: string): string?
-	local value = if instance ~= nil then instance:GetAttribute(name) else nil
+local function setText(root: Instance?, path: string, text: string)
+	local label = UiKit.authored(root, path, "TextLabel")
 
-	return if type(value) == "string" then value else nil
+	if label ~= nil then
+		label.Text = text
+	end
+end
+
+local function setImage(root: Instance?, path: string, image: string)
+	local art = UiKit.authored(root, path, "ImageLabel")
+
+	if art ~= nil then
+		art.Image = image
+	end
+end
+
+local function setFill(root: Instance?, path: string, share: number)
+	local fill = UiKit.authored(root, path, "GuiObject")
+
+	if fill ~= nil then
+		fill.Size = UDim2.fromScale(math.clamp(share, 0, 1), 1)
+	end
+end
+
+local function setShown(root: Instance?, path: string, shown: boolean)
+	local part = UiKit.authored(root, path, "GuiObject")
+
+	if part ~= nil then
+		part.Visible = shown
+	end
 end
 
 function QuestsPanel.new(menu: MenuScreen.MenuScreen): QuestsPanel
 	local window = menu:window(WINDOW)
-	local tabsFrame = UiKit.authored(window, "Tabs", "GuiObject")
-	local list = UiKit.authored(window, "Grid.List", "ScrollingFrame")
-
-	local fields: Fields = {
+	local self = setmetatable({
 		menu = menu,
-		tabs = {},
-		tabImage = attribute(tabsFrame, "TabImage"),
-		pickedTabImage = attribute(tabsFrame, "PickedTabImage"),
-		list = list,
-		rowTemplate = UiKit.authored(list, "RowTemplate", "GuiObject"),
-		rows = {},
-		levelGlyph = UiKit.authored(window, "LevelBadge.Glyph", "TextLabel"),
-		levelName = UiKit.authored(window, "DetailName", "TextLabel"),
-		xpLabel = UiKit.authored(window, "XpLabel", "TextLabel"),
-		xpFill = UiKit.authored(window, "XpBar.Fill", "GuiObject"),
-		resetLabel = UiKit.authored(window, "ResetLabel", "TextLabel"),
-		quests = {},
-		tab = TAB_KEYS[1],
-	}
-	local self = setmetatable(fields, QuestsPanel)
+		window = window,
+		tab = 1,
+		daily = {},
+		achievements = {},
+		medals = {},
+		lines = {},
+		picked = nil,
+		onClaim = nil,
+	} :: Fields, QuestsPanel)
 
-	if fields.rowTemplate ~= nil then
-		fields.rowTemplate.Visible = false
-	end
-
-	for index, key in TAB_KEYS do
-		local button = UiKit.authored(tabsFrame, "Tab" .. index, "GuiButton")
+	for index in TABS do
+		local button = UiKit.authored(window, "Tabs.Tab" .. index, "GuiButton")
 
 		if button ~= nil then
-			table.insert(fields.tabs, { button = button, key = key, count = UiKit.child(button, "Count", "TextLabel") })
 			UiKit.bindHover(button)
 			button.Activated:Connect(function()
-				self.tab = key
-				self:_draw()
+				self.tab = index
+				self:_showTab(true)
 			end)
 		end
+	end
+
+	for index = 1, DAILY_ROWS do
+		local claim = UiKit.authored(window, ("Daily.Row%d.ClaimButton"):format(index), "GuiButton")
+
+		if claim ~= nil then
+			UiKit.bindHover(claim)
+			claim.Activated:Connect(function()
+				local quest = self.daily[index]
+
+				if quest ~= nil and quest.state == "claim" and self.onClaim ~= nil then
+					self.onClaim(quest.id)
+				else
+					UiKit.playSound("uiDenied")
+				end
+			end)
+		end
+	end
+
+	local template = UiKit.authored(window, "Achievements.Road.Canvas.MedalTemplate", "GuiObject")
+
+	if template ~= nil then
+		template.Visible = false
 	end
 
 	local close = UiKit.authored(window, "CloseButton", "GuiButton")
@@ -105,11 +148,17 @@ function QuestsPanel.new(menu: MenuScreen.MenuScreen): QuestsPanel
 	if close ~= nil then
 		UiKit.bindHover(close)
 		close.Activated:Connect(function()
-			menu:close(WINDOW)
+			self:setVisible(false)
 		end)
 	end
 
+	self:_showTab(false)
+
 	return self
+end
+
+function QuestsPanel.bindClaim(self: QuestsPanel, callback: (questId: string) -> ())
+	self.onClaim = callback
 end
 
 function QuestsPanel.isVisible(self: QuestsPanel): boolean
@@ -119,204 +168,256 @@ end
 function QuestsPanel.setVisible(self: QuestsPanel, visible: boolean)
 	if visible then
 		self.menu:open(WINDOW)
-		task.defer(function()
-			self:_fitCanvas()
-		end)
 	else
 		self.menu:close(WINDOW)
 	end
 end
 
--- quests holds a list of rows per tab: daily and achievements.
-function QuestsPanel.render(self: QuestsPanel, quests: { [string]: { Quest } })
-	self.quests = quests
-	self:_draw()
-end
+function QuestsPanel._showTab(self: QuestsPanel, animate: boolean)
+	for index, name in TABS do
+		local page = UiKit.authored(self.window, name, "GuiObject")
+		local button = UiKit.authored(self.window, "Tabs.Tab" .. index, "GuiButton")
 
-function QuestsPanel.setLevel(self: QuestsPanel, level: Level)
-	local need = math.max(level.need, 1)
+		if page ~= nil then
+			page.Visible = index == self.tab
 
-	if self.levelGlyph ~= nil then
-		self.levelGlyph.Text = tostring(level.level)
-	end
+			if animate and index == self.tab then
+				MenuLife.enter(page)
+			end
+		end
 
-	if self.levelName ~= nil then
-		self.levelName.Text = level.name
-	end
-
-	if self.xpLabel ~= nil then
-		self.xpLabel.Text = if level.maxed then "TOP RANK" else ("%d / %d XP"):format(level.into, need)
-	end
-
-	if self.xpFill ~= nil then
-		self.xpFill.Size = UDim2.fromScale(math.clamp(level.into / need, 0, 1), 1)
+		if button ~= nil then
+			UiKit.setLit(button, index == self.tab)
+		end
 	end
 end
 
 function QuestsPanel.setResetText(self: QuestsPanel, text: string)
-	if self.resetLabel ~= nil then
-		self.resetLabel.Text = text
+	setText(self.window, "Daily.ResetChip.Label", text)
+end
+
+function QuestsPanel.setLevel(self: QuestsPanel, level: Level)
+	local strip = UiKit.authored(self.window, "Daily.Rank", "GuiObject")
+
+	setText(strip, "NumberLabel", tostring(level.level))
+	setText(strip, "NameLabel", string.upper(level.name))
+	setText(strip, "XpLabel", if level.maxed then "MAX RANK" else ("%d / %d XP"):format(level.into, level.need))
+	setFill(strip, "Bar.Fill", if level.maxed then 1 else level.into / math.max(level.need, 1))
+end
+
+function QuestsPanel.drawToday(self: QuestsPanel, today: Today)
+	local page = UiKit.authored(self.window, "Daily", "GuiObject")
+
+	setText(page, "TodayBar.DoneLabel", today.done)
+	setText(page, "TodayBar.CoinsLabel", today.coins)
+	setText(page, "Streak.ValueLabel", today.streak)
+	setText(page, "Bonus.ValueLabel", today.bonus)
+
+	for index = 1, STREAK_DOTS do
+		local dot = UiKit.authored(page, "Streak.Dot" .. index, "GuiObject")
+
+		if dot ~= nil then
+			UiKit.setLit(dot, index <= today.lit)
+		end
 	end
 end
 
-function QuestsPanel._draw(self: QuestsPanel)
-	for _, tab in self.tabs do
-		local image = if tab.key == self.tab then self.pickedTabImage else self.tabImage
+function QuestsPanel.render(self: QuestsPanel, daily: { DailyQuest }, achievements: { Achievement })
+	self.daily = daily
+	self.achievements = achievements
+	self:_drawDaily()
+	self:_drawRoad()
 
-		if image ~= nil and tab.button:IsA("ImageButton") then
-			UiKit.setImage(tab.button, image)
-		else
-			UiKit.setLit(tab.button, tab.key == self.tab)
-		end
+	local done, earned = 0, 0
 
-		self:_drawCount(tab)
-	end
-
-	for _, row in self.rows do
-		row:Destroy()
-	end
-
-	self.rows = {}
-
-	local list, template = self.list, self.rowTemplate
-
-	if list == nil or template == nil then
-		return
-	end
-
-	for index, quest in QuestsPanel._openFirst(self.quests[self.tab] or {}) do
-		local row = template:Clone()
-		row.Name = "Quest" .. index
-		row.LayoutOrder = index
-		row.Visible = true
-		self:_fillRow(row, quest)
-		row.Parent = list
-		table.insert(self.rows, row)
-	end
-
-	-- New rows have no size until the next layout pass.
-	task.defer(function()
-		self:_fitCanvas()
-	end)
-end
-
-function QuestsPanel._openFirst(quests: { Quest }): { Quest }
-	local ordered = {}
-
-	for _, quest in quests do
-		if not quest.done then
-			table.insert(ordered, quest)
-		end
-	end
-
-	for _, quest in quests do
-		if quest.done then
-			table.insert(ordered, quest)
-		end
-	end
-
-	return ordered
-end
-
-function QuestsPanel._drawCount(self: QuestsPanel, tab: Tab)
-	local count = tab.count
-	local quests = self.quests[tab.key] or {}
-
-	if count == nil then
-		return
-	end
-
-	local done = 0
-
-	for _, quest in quests do
-		if quest.done then
+	for _, quest in daily do
+		if quest.state ~= "progress" then
 			done += 1
 		end
 	end
 
-	count.Text = ("%d/%d"):format(done, #quests)
-	count.Visible = #quests > 0
-end
-
-function QuestsPanel._fillRow(_self: QuestsPanel, row: GuiObject, quest: Quest)
-	local name = UiKit.child(row, "NameLabel", "TextLabel")
-	local progress = UiKit.child(row, "ProgressLabel", "TextLabel")
-	local reward = UiKit.child(row, "RewardLabel", "TextLabel")
-	local fill = UiKit.child(row:FindFirstChild("Bar"), "Fill", "GuiObject")
-	local doneMark = UiKit.child(row, "DoneMark", "GuiObject")
-	local coin = UiKit.child(row, "CoinIcon", "GuiObject")
-
-	UiKit.setIcon(UiKit.child(row, "Glyph", "TextLabel"), quest.glyph, quest.icon)
-	UiKit.setIcon(UiKit.child(row, "RewardGlyph", "TextLabel"), quest.rewardGlyph, quest.rewardIcon)
-
-	if coin ~= nil then
-		coin.Visible = quest.rewardGlyph == nil and quest.rewardIcon == nil
-	end
-
-	if doneMark ~= nil then
-		doneMark.Visible = quest.done
-	end
-
-	if quest.done then
-		row:AddTag(DONE_TAG)
-	end
-
-	local doneImage = row:GetAttribute("DoneImage")
-
-	if quest.done and typeof(doneImage) == "string" and row:IsA("ImageLabel") then
-		row.Image = doneImage
-	end
-
-	local doneColor = if progress ~= nil then progress:GetAttribute("DoneColor") else nil
-
-	if quest.done and progress ~= nil and typeof(doneColor) == "Color3" then
-		progress.TextColor3 = doneColor
-	end
-
-	if name ~= nil then
-		name.Text = string.upper(quest.name)
-		name.TextTransparency = if quest.done then DONE_TRANSPARENCY else 0
-	end
-
-	if progress ~= nil then
-		progress.Text = quest.progressText
-	end
-
-	if reward ~= nil then
-		reward.Text = quest.rewardText
-	end
-
-	if fill ~= nil then
-		fill.Size = UDim2.fromScale(0, 1)
-		TweenService:Create(fill, FILL_TWEEN, { Size = UDim2.fromScale(math.clamp(quest.fraction, 0, 1), 1) }):Play()
-	end
-end
-
-function QuestsPanel._fitCanvas(self: QuestsPanel)
-	local list = self.list
-
-	if list == nil then
-		return
-	end
-
-	local layout = list:FindFirstChildOfClass("UIListLayout")
-	local padding = list:FindFirstChildOfClass("UIPadding")
-	local height = 0
-
-	-- The layout knows the real height, gaps included.
-	if layout ~= nil then
-		height = layout.AbsoluteContentSize.Y
-	else
-		for _, row in self.rows do
-			height += row.AbsoluteSize.Y + ROW_GAP
+	for _, achievement in achievements do
+		if achievement.state == "earned" then
+			earned += 1
 		end
 	end
 
-	if padding ~= nil then
-		height += padding.PaddingTop.Offset + padding.PaddingBottom.Offset
+	setText(self.window, "Tabs.Tab1.Count", ("%d/%d"):format(done, #daily))
+	setText(self.window, "Tabs.Tab2.Count", ("%d/%d"):format(earned, #achievements))
+	setText(self.window, "Achievements.Summary.CountLabel", ("%d / %d"):format(earned, #achievements))
+	setFill(self.window, "Achievements.Summary.Bar.Fill", if #achievements > 0 then earned / #achievements else 0)
+end
+
+function QuestsPanel._drawDaily(self: QuestsPanel)
+	for index = 1, DAILY_ROWS do
+		local row = UiKit.authored(self.window, "Daily.Row" .. index, "GuiObject")
+		local quest = self.daily[index]
+
+		if row == nil then
+			continue
+		end
+
+		row.Visible = quest ~= nil
+
+		if quest == nil then
+			continue
+		end
+
+		local claimable = quest.state == "claim"
+
+		setText(row, "NameLabel", string.upper(quest.name))
+
+		if quest.icon ~= "" then
+			setImage(row, "IconTile.Icon", quest.icon)
+		end
+
+		setText(row, "ProgressLabel", quest.progress)
+		setFill(row, "Bar.Fill", quest.fraction)
+		setText(row, "RewardLabel", quest.reward)
+		setText(row, "ClaimButton.Label", if claimable then "CLAIM " .. quest.reward else quest.reward .. " CLAIMED")
+		setShown(row, "ClaimButton", quest.state ~= "progress")
+		setShown(row, "RewardChip", quest.state == "progress")
+		setShown(row, "RewardLabel", quest.state == "progress")
+		setShown(row, "DoneMark", quest.state == "done")
+		UiKit.setLit(row, claimable)
+
+		local claim = UiKit.authored(row, "ClaimButton", "GuiObject")
+
+		if claim ~= nil then
+			UiKit.setLit(claim, claimable)
+		end
+	end
+end
+
+-- The achievement the detail card opens on: the one closest to done, else the first locked.
+function QuestsPanel._nextUp(self: QuestsPanel): Achievement?
+	local best: Achievement? = nil
+
+	for _, achievement in self.achievements do
+		if achievement.state ~= "earned" and (best == nil or achievement.fraction > best.fraction) then
+			best = achievement
+		end
 	end
 
-	list.CanvasSize = UDim2.fromOffset(0, height)
+	return best or self.achievements[#self.achievements]
+end
+
+-- Where medal number index sits on the road, as shares of the canvas.
+local function medalSpot(index: number, rows: number): (number, number)
+	local row = (index - 1) // MEDALS_PER_ROW
+	local column = (index - 1) % MEDALS_PER_ROW
+	local step = (1 - 2 * MEDAL_INSET) / math.max(MEDALS_PER_ROW - 1, 1)
+
+	if row % 2 == 1 then
+		column = MEDALS_PER_ROW - 1 - column
+	end
+
+	return MEDAL_INSET + column * step, (row + 0.5) / rows
+end
+
+function QuestsPanel._drawRoad(self: QuestsPanel)
+	local canvas = UiKit.authored(self.window, "Achievements.Road.Canvas", "GuiObject")
+	local template = UiKit.authored(canvas, "MedalTemplate", "GuiObject")
+	local lineTemplate = UiKit.authored(canvas, "LineTemplate", "GuiObject")
+
+	for _, old in self.medals do
+		old:Destroy()
+	end
+
+	for _, old in self.lines do
+		old:Destroy()
+	end
+
+	self.medals, self.lines = {}, {}
+
+	if canvas == nil or template == nil then
+		return
+	end
+
+	local count = #self.achievements
+	local rows = math.max(math.ceil(count / MEDALS_PER_ROW), 1)
+
+	canvas.Size = UDim2.fromScale(1, math.max(rows * ROW_SHARE, 1))
+
+	for index, achievement in self.achievements do
+		local x, y = medalSpot(index, rows)
+		local medal = template:Clone()
+
+		medal.Name = achievement.id
+		medal.Position = UDim2.fromScale(x, y)
+		medal.Visible = true
+		setImage(medal, "Badge", achievement.badge)
+		setText(medal, "NameLabel", ("%d. %s"):format(index, string.upper(achievement.name)))
+		setText(medal, "RewardLabel", achievement.reward)
+		setShown(medal, "Lock", achievement.state == "locked")
+
+		local badge = UiKit.authored(medal, "Badge", "ImageLabel")
+
+		if badge ~= nil then
+			badge.ImageTransparency = if achievement.state == "locked" then DIM else 0
+		end
+
+		if medal:IsA("GuiButton") then
+			UiKit.bindHover(medal)
+			medal.Activated:Connect(function()
+				self.picked = achievement.id
+				self:_drawDetail()
+			end)
+		end
+
+		medal.Parent = canvas
+		table.insert(self.medals, medal)
+
+		-- The stretch of road leading to this medal is lit once the one before it is earned.
+		if index > 1 and lineTemplate ~= nil then
+			local fromX, fromY = medalSpot(index - 1, rows)
+			local line = lineTemplate:Clone()
+			local sameRow = math.abs(fromY - y) < 0.001
+
+			line.Name = "Line" .. index
+			line.Visible = true
+			line.AnchorPoint = Vector2.new(0.5, 0.5)
+			line.Position = UDim2.fromScale((fromX + x) / 2, (fromY + y) / 2)
+			line.Size = if sameRow
+				then UDim2.new(math.abs(x - fromX), 0, 0, LINE_PIXELS)
+				else UDim2.new(0, LINE_PIXELS, math.abs(y - fromY), 0)
+			UiKit.setLit(line, self.achievements[index - 1].state == "earned")
+			line.Parent = canvas
+			table.insert(self.lines, line)
+		end
+	end
+
+	self:_drawDetail()
+end
+
+function QuestsPanel._drawDetail(self: QuestsPanel)
+	local detail = UiKit.authored(self.window, "Achievements.Detail", "GuiObject")
+	local shown: Achievement? = nil
+
+	for _, achievement in self.achievements do
+		if achievement.id == self.picked then
+			shown = achievement
+		end
+	end
+
+	shown = shown or self:_nextUp()
+
+	if shown == nil then
+		return
+	end
+
+	for index, medal in self.medals do
+		UiKit.setLit(medal, self.achievements[index].id == shown.id)
+	end
+
+	setText(detail, "Caption.Label", CAPTIONS[shown.state] or "")
+	setImage(detail, "Badge", shown.badge)
+	setText(detail, "NameLabel", string.upper(shown.name))
+	setText(detail, "GoalLabel", shown.goal)
+	setText(detail, "ProgressLabel", shown.progress)
+	setFill(detail, "Bar.Fill", shown.fraction)
+	setText(detail, "Reward.Label", shown.reward)
+	setImage(detail, "Reward.Icon", shown.rewardIcon or "")
 end
 
 return QuestsPanel

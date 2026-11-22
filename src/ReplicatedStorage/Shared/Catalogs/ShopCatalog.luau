@@ -66,6 +66,7 @@ ShopCatalog.Sections = {
 -- gets the wide banner; wasRobux shows a struck-out old price and its discount;
 -- badge is the corner ribbon. grants is what PurchaseService hands over for a product;
 -- a pass's perk is applied where it pays out (RewardService for 2x coins and XP).
+-- boardIcon is the flat art the This Week board shows for an offer; icon stays the shop's.
 ShopCatalog.Offers = {
 	{
 		id = "starter-pack",
@@ -73,6 +74,7 @@ ShopCatalog.Offers = {
 		displayName = "Starter Pack",
 		glyph = "🎁",
 		icon = "rbxassetid://70793384037603",
+		boardIcon = "rbxassetid://89693728503856",
 		rarity = "legendary",
 		robux = 99,
 		wasRobux = 250,
@@ -102,6 +104,7 @@ ShopCatalog.Offers = {
 		displayName = "2x Beat Coins",
 		glyph = "💰",
 		icon = "rbxassetid://115289050254455",
+		boardIcon = "rbxassetid://126967598970517",
 		rarity = "epic",
 		robux = 249,
 		badge = "BEST SELLER",
@@ -115,6 +118,7 @@ ShopCatalog.Offers = {
 		displayName = "2x XP",
 		glyph = "⚡",
 		icon = "rbxassetid://106782623695831",
+		boardIcon = "rbxassetid://119733254746526",
 		rarity = "epic",
 		robux = 199,
 		description = "Level up twice as fast.",
@@ -127,6 +131,7 @@ ShopCatalog.Offers = {
 		displayName = "Stage Pass",
 		glyph = "🎟️",
 		icon = "rbxassetid://116786250829050",
+		boardIcon = "rbxassetid://136659466294722",
 		rarity = "legendary",
 		robux = 99,
 		badge = "NEW",

@@ -158,7 +158,7 @@ scripts/                           hygiene check, git hook setup, the chart gene
 tools/scripts/                     image helpers for UI art
 ```
 
-`src/ReplicatedFirst` holds the loading screen script, which binds `StarterGui.Loading` (the default Roblox screen covers until it replicates). Everything not under `src/` lives in the place file and is edited in Studio. Anything under
+`src/ReplicatedFirst` holds the loading screen script, which shows a copy of `ReplicatedFirst.Loading` (authored in the place file, so it is up from the first frame). Everything not under `src/` lives in the place file and is edited in Studio. Anything under
 `src/` is overwritten by Argon, so edit it here, not in Studio.
 
 ## Architecture
