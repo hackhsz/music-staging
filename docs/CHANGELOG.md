@@ -11,6 +11,7 @@ place; until then everything sits under Unreleased.
 
 ### Changed
 
+- Settings rebuilt to a GPT mockup: the title sits inside the window instead of a tab sticking out, a bigger close button, icons on the section tabs, and each setting is a card with a round icon badge, a thick pink slider and its value in a dark pill.
 - This Week board, Lobby HUD and Stage Pass rebuilt to GPT mockups (in the Encore UI Brief): a bigger left rail with HOME first, a wider SOLO PLAY aligned over PLAY, the Stage Pass season line shows when the season ends. Quest rows fill the Quests window, and Rewards gift tiles stack time, icon, reward and timer top to bottom with the code field across the bottom.
 - Robux purchases are granted on the server: dev products go through ProcessReceipt (each receipt granted once, saved before Roblox is told), and 2x Beat Coins and 2x XP passes now double song coins and XP. Sales go live per offer once its pass or product id is filled in `ShopCatalog`; VIP and the song pack stay coming soon.
 - The Stage Pass is sold as a one-season R$ 99 product: its shop card opens the Pass window, and the window's UNLOCK PASS button prompts the purchase.
