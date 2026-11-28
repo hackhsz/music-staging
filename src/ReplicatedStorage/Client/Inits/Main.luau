@@ -48,6 +48,7 @@ local ShopController = require(Controllers:WaitForChild("ShopController"))
 local WardrobeController = require(Controllers:WaitForChild("WardrobeController"))
 local Remotes = require(Net:WaitForChild("Remotes"))
 local Telemetry = require(Net:WaitForChild("Telemetry"))
+local FpsLog = require(Client:WaitForChild("Debug"):WaitForChild("FpsLog"))
 
 local Main = {}
 
@@ -339,6 +340,10 @@ function Main.Start()
 	islands:start()
 	hotkeys:start()
 	onboarding:start()
+	-- Studio frame-rate lines in the Output, one median per state (Debug.FpsLog).
+	FpsLog.start(function()
+		return if run:isRunning() then "run" else "lobby"
+	end)
 
 	-- The loading screen (ReplicatedFirst) holds until this is set.
 	Players.LocalPlayer:SetAttribute("ClientReady", true)

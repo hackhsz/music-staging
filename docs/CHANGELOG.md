@@ -13,6 +13,8 @@ place; until then everything sits under Unreleased.
 
 - The code now boots like AB Testing Place: one Script (`ServerScriptService.Server`) and one LocalScript (`StarterPlayerScripts.Client`) start every init under `ServerStorage.Server.Inits` and `ReplicatedStorage.Client.Inits`, priority inits first. Client code moved to `ReplicatedStorage.Client`, server code to `ServerStorage.Server`, and the `_G` Backend global is gone (`BackendInit.Get()`). Behaviour is unchanged; anyone syncing must pull this before their next Argon connect.
 - `Shared/Packages` (Loader, LemonSignal) and `Shared/Utility` (Lifecycle, SafeLoader, Signal, Maid, Stepper, Solvers) replace `Shared/Util`.
+- `Client/Debug/FpsLog` prints frame-rate lines per state in Studio (`Workspace.FpsLog` turns it on or off) and `measure()` takes an A/B sample.
+- `default.project.json` keeps `SoundService.DefaultListenerLocation` on Camera, so a sync no longer resets it to Default.
 
 - Style, Loadout and Shop are in the album style too: the print panel and header, slanted pink and dark tabs and buttons, plum cards with a pink frame on the picked one, and the moving background. Their layouts and behaviour are unchanged.
 

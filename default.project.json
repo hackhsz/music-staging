@@ -21,6 +21,7 @@
     "SoundService": {
       "$className": "SoundService",
       "$properties": {
+        "DefaultListenerLocation": "Camera",
         "RespectFilteringEnabled": true
       }
     },
