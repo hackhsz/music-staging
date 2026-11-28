@@ -47,25 +47,27 @@ every play test starts from a fresh default profile. Test persistence in a real 
 
 ```
 src/
-  ReplicatedStorage/Shared/     the rules, the charts and the catalogs, loaded by both sides
-  ServerScriptService/Server/   entry scripts plus Services/ (classes, constructed in Backend)
-  StarterPlayerScripts/Client/  Main.client.luau wiring, plus UI, Input, Controllers and Net layers and the view, audio and VFX controllers
+  ServerScriptService/Server    the server's only Script: boots ServerStorage.Server.Inits
+  StarterPlayerScripts/Client   the client's only LocalScript: boots ReplicatedStorage.Client.Inits
+  ReplicatedStorage/Shared/     the rules, the charts and the catalogs, plus Packages/ and Utility/, loaded by both sides
+  ReplicatedStorage/Client/     Inits/ (Main wiring and the client inits), plus UI, Input, Controllers and Net layers and the view, audio and VFX controllers
+  ServerStorage/Server/         Inits/ (RemoteBootstrap, Backend, RhythmService...) plus Services/ (classes, constructed in Backend)
+  ServerStorage/Tests/          specs for the pure Shared modules
 docs/                           the design plan, progression spec, hub layout, UI style, changelog
 scripts/                        hygiene check and git hook setup
 tools/scripts/                  image helpers for UI art
 ```
 
-`src/ReplicatedFirst` and `src/ServerStorage` are mapped but currently empty.
-
 ## Architecture in one page
 
-- **No framework.** No ModuleLoader, no Knit, no Packet, no ProfileService. Modules are plain
-  ModuleScripts found with `WaitForChild`; server entry points are ordinary `*.server.luau` scripts
-  that run top to bottom.
-- **Four server scripts.** `RemoteBootstrap` creates the RemoteEvents, `Backend` wires the services
-  together and owns profiles and purchases, `RhythmService` judges every run, and `FeatureRegistry`
-  loads the catalogs so they validate at boot. `Backend` is published on
-  `_G.DanceDanceStepBackend`, the project's one global.
+- **Two entry scripts and a lifecycle.** `ServerScriptService.Server` and
+  `StarterPlayerScripts.Client` boot their side's `Inits` through `Shared/Utility/Lifecycle`:
+  `Inits/Priority` runs first through `Init()`, then every other init's `Start()` is spawned. Each
+  init is a ModuleScript; nothing else under `src/` runs on its own.
+- **The server inits.** `RemoteBootstrap` (priority) creates the RemoteEvents, `Backend` wires the
+  services together and owns profiles and purchases, `RhythmService` judges every run, and
+  `FeatureRegistry` loads the catalogs so they validate at boot. `RhythmService` reaches the
+  Backend through `BackendInit.Get()`; there are no globals.
 - **The network contract is a table.** `Shared/RemoteContract.luau` declares every event, its
   direction, its payload keys and its rate limit. Entries are keyed by name, so adding one is safe
   anywhere in the table.

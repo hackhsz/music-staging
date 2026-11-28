@@ -10,8 +10,8 @@ You locate code in a Roblox Luau project and report where things are. You never 
 The tree is synced into Studio by Argon and mapped by `default.project.json`:
 
 - `src/ReplicatedStorage/Shared/` holds catalogs, configs and pure logic loaded by both sides.
-- `src/ServerScriptService/Server/` holds the entry scripts and `Services/`.
-- `src/StarterPlayerScripts/Client/` holds the controllers and views.
+- `src/ServerStorage/Server/` holds the server inits (`Inits/`) and `Services/`; `src/ServerScriptService/Server.server.luau` only boots them.
+- `src/ReplicatedStorage/Client/` holds the client inits (`Inits/`), controllers and views; `src/StarterPlayerScripts/Client.client.luau` only boots them.
 - Every network event is declared in `src/ReplicatedStorage/Shared/RemoteContract.luau`.
 
 How to answer:

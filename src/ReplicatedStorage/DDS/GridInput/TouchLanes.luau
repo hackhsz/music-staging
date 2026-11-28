@@ -16,7 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
-local Maid = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Maid"))
+local Maid = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Utility"):WaitForChild("Maid"))
 
 local PRESS_INFO = TweenInfo.new(PRESS_IN_SEC, Enum.EasingStyle.Linear)
 local RELEASE_INFO = TweenInfo.new(RELEASE_SEC, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)

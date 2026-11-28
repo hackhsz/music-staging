@@ -60,10 +60,16 @@ local function setupStar(star)
     end)
 end
 
--- Handle all currently tagged stars
-for _, star in ipairs(CollectionService:GetTagged("StarFlash")) do
-    setupStar(star)
+local StarFlash = {}
+
+function StarFlash.Start()
+	-- Handle all currently tagged stars
+	for _, star in ipairs(CollectionService:GetTagged("StarFlash")) do
+	    setupStar(star)
+	end
+
+	-- Handle stars tagged later during gameplay
+	CollectionService:GetInstanceAddedSignal("StarFlash"):Connect(setupStar)
 end
 
--- Handle stars tagged later during gameplay
-CollectionService:GetInstanceAddedSignal("StarFlash"):Connect(setupStar)
+return StarFlash

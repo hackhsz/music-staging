@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DDS = ReplicatedStorage:WaitForChild("DDS")
 local Config = require(DDS:WaitForChild("Config"))
-local Maid = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Maid"))
+local Maid = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Utility"):WaitForChild("Maid"))
 
 local ChartMirror = {}
 ChartMirror.__index = ChartMirror

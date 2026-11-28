@@ -37,20 +37,26 @@ local modules = {
 	"PerformanceBudget",
 }
 
-for _, path in modules do
-	local module = Shared
+local FeatureRegistry = {}
 
-	for name in string.gmatch(path, "[^/]+") do
-		module = module:WaitForChild(name)
+function FeatureRegistry.Start()
+	for _, path in modules do
+		local module = Shared
+
+		for name in string.gmatch(path, "[^/]+") do
+			module = module:WaitForChild(name)
+		end
+
+		require(module)
 	end
 
-	require(module)
+	local chartsOk, chartsReason = require(Shared:WaitForChild("SongMapCatalog")).validateAll()
+
+	if not chartsOk then
+		warn("[DanceDanceStep] A chart failed validation: " .. chartsReason)
+	end
+
+	print(("[DanceDanceStep] Day 0 feature registry loaded %d modules"):format(#modules))
 end
 
-local chartsOk, chartsReason = require(Shared:WaitForChild("SongMapCatalog")).validateAll()
-
-if not chartsOk then
-	warn("[DanceDanceStep] A chart failed validation: " .. chartsReason)
-end
-
-print(("[DanceDanceStep] Day 0 feature registry loaded %d modules"):format(#modules))
+return FeatureRegistry

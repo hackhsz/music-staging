@@ -9,7 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(script.Parent.Config)
-local Signal = require(ReplicatedStorage.Shared.Util.Signal)
+local Signal = require(ReplicatedStorage.Shared.Utility.Signal)
 local Loadout = require(script.Loadout)
 
 local PowerUpHandler = {}

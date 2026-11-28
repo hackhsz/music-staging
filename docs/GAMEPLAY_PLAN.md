@@ -52,7 +52,7 @@ Tests, multiplayer fixes, content and power-ups all depend on what a "step" mean
   the chart for you (see `Controllers/AutoplayController`); clear it before the place is saved. Edit mode is fine. Studio flips between Edit and Play because
   the user drives it; if a call says the datamodel is unavailable, ask them to switch.
 - **Do not commit unless asked.** Check `git status` first: the tree has many uncommitted changes from other
-  sessions, and **another agent is editing the UI** (`src/StarterPlayerScripts/Client/UI/`) and
+  sessions, and **another agent is editing the UI** (`src/ReplicatedStorage/Client/UI/`) and
   `Controllers/LobbyController.luau`. Read the current file before editing and adapt to it; never overwrite.
 - **Edit the repo, not the place**, except for `Workspace.Arena`, which is authored in the place (see
   [UI_STYLE.md](UI_STYLE.md)). Argon syncs `src/` into Studio live when the user has it running.
@@ -62,10 +62,10 @@ Tests, multiplayer fixes, content and power-ups all depend on what a "step" mean
 
 **Architecture.** Client is layered: `Client/UI` (screens, no remotes), `Client/Input`, `Client/Controllers`
 (Run, Lobby, Shop, Calibration, Floor; the only code touching remotes), `Client/Net` (`Remotes.luau` lists every
-remote), `Client/World` (arena `build` and `bind`), `Main.client.luau` (wiring only). Server: `RhythmService`
-(the judge), `Services/MultiplayerService.luau`, `Backend.server.luau`. See CLAUDE.md for the full layout.
+remote), `Client/World` (arena `build` and `bind`), `Client/Inits/Main` (wiring only). Server: `Inits/RhythmService`
+(the judge), `Services/MultiplayerService.luau`, `Inits/Backend`. See CLAUDE.md for the full layout.
 
-**The judge** (`src/ServerScriptService/Server/RhythmService.server.luau`):
+**The judge** (`src/ServerStorage/Server/Inits/RhythmService.luau`):
 - Each heartbeat runs `updatePositionAudit`, then `updateHolding` or `processDueSteps`.
 - The **plain-step branch** of `processDueSteps` (tap and bonus) waits until the beat, allows
   `Timing.LateArriveGrace` (0.14 s) for a late arrival, then grades with `Timing.gradeStandAndWait(onTile,
@@ -281,8 +281,8 @@ Sanity targets before a mode can win: the median player on normal reaches rank B
    `https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau`
 3. `luau-lsp analyze --sourcemap <temp>/sourcemap.json --definitions <temp>/globalTypes.d.luau --platform roblox <paths>`
 
-Run it on `src/StarterPlayerScripts/Client`, `src/ReplicatedStorage/Shared` and `src/ServerScriptService/Server`.
-The only expected error is an existing one in `FarVFXCuller.client.luau`. Put temp files outside the repo.
+Run it on `src/ReplicatedStorage/Client`, `src/ReplicatedStorage/Shared` and `src/ServerStorage/Server`.
+The only expected error is an existing one in `Client/Inits/FarVFXCuller.luau`. Put temp files outside the repo.
 
 **Unit tests (no Play needed).** Studio's `execute_luau` in **Edit** mode can `require` the test runner from
 `ServerStorage` and return pass/fail text. Gotcha: Edit mode caches `require`d modules for the session, so after

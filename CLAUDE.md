@@ -12,7 +12,7 @@ solo.
 
 The design authority is [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md); the other documents under
 `docs/` serve it. Where a design document and the code disagree about something already built, the
-code wins and the document needs updating: the core loop lives in `RhythmService.server.luau` and
+code wins and the document needs updating: the core loop lives in `Server/Inits/RhythmService.luau` and
 `Shared/Timing.luau`. Where the code simply has no opinion yet, the plan decides.
 
 The working title is Dance Dance Step, which is what the code logs and what the DataStore is named.
@@ -50,7 +50,11 @@ anywhere else.
 
 ```
 src/
+  ServerScriptService/Server.server.luau   the server's only Script: boots ServerStorage.Server.Inits
+  StarterPlayerScripts/Client.client.luau  the client's only LocalScript: boots ReplicatedStorage.Client.Inits
   ReplicatedStorage/Shared/        loaded by both sides; plain ModuleScripts
+    Packages/                      third-party code, verbatim: Loader (sleitnick 2.0.0), LemonSignal (1.11.0)
+    Utility/                       Lifecycle (the boot), SafeLoader, Signal (wraps LemonSignal), Maid, Stepper, Solvers
     RemoteContract.luau            THE network contract: every RemoteEvent, its direction and rate limit
     Board.luau                     floor maths for the active layout; coord <-> world position; a floor per player
     BoardLayouts.luau              the floor shapes (5x5, 3x3 pad, four lanes) and the chart remap onto each
@@ -75,12 +79,13 @@ src/
     Catalogs/                      cosmetics, emotes, characters, stages, themes, audio, VFX, abilities
                                    (AbilityCatalog), achievements, economy, levels and the other content tables
     Policies/                      rights, UGC and monetization guardrails (see Rights, below)
-  ServerScriptService/Server/
-    RemoteBootstrap.server.luau    creates every RemoteEvent from RemoteContract. Runs first.
-    Backend.server.luau            wires the Services together; owns profile sync, purchases, emotes
-    RhythmService.server.luau      the judge: sessions, beat heartbeat, anti-cheat, scoring
-    FeatureRegistry.server.luau    requires the catalog modules so they load and validate
-    Main.server.luau               a boot log line
+  ServerStorage/Server/            server-only modules, never replicated
+    Inits/Priority/RemoteBootstrap creates every RemoteEvent from RemoteContract, before any other init loads
+    Inits/Backend                  wires the Services together; owns profile sync, purchases, emotes
+    Inits/RhythmService            the judge: sessions, beat heartbeat, anti-cheat, scoring
+    Inits/FeatureRegistry          requires the catalog modules so they load and validate
+    Inits/BootLog                  a boot log line
+    Inits/World/                   the island's tagged props: photo-pose flowers, star flashes, sparks, teleport doors
     Services/                      classes constructed with .new(), not singletons
       PlayerDataService            DataStore profiles, schema migration, autosave
       RewardService                song payouts, achievements, XP, daily challenges, the play-time gifts
@@ -94,8 +99,11 @@ src/
       DataStoreRetry               the shared DataStore budget wait and retry loop
       FunnelService                logs FunnelCatalog's funnels to AnalyticsService
       OnboardingService            lesson drills passed, steps and tips done, the one-time gift; pushed to the client
-  StarterPlayerScripts/Client/
-    Main.client.luau               wiring only: builds the views and controllers, hands each its deps, starts them
+  ReplicatedStorage/Client/        client-only modules, started by the Client entry script
+    Inits/Main                     wiring only: builds the views and controllers, hands each its deps, starts them
+    Inits/StageBlockoutRenderer    binds Workspace.Arena and keeps it on the beat
+    Inits/FarVFXCuller  FallGuard  Bouncy    distance culling of StreamedVFX, the fall reset, bouncy pads
+    Debug/FpsLog                   Studio frame-rate lines per state; measure() for A/B checks
     Controllers/                   the game logic, one concern each; the only code that touches remotes
       RunController                one run: session clock, telegraph, settle ring, verdict feedback
       LobbyController              song list, picking a track, play mode, lobby rewards
@@ -134,11 +142,10 @@ src/
                                    SoundGroups (the music, effects, dance and menu volumes)
     Dance/                         the dancer: DanceAnimator, the pad's PadDanceMoves, DanceRig (joint posing),
                                    AvatarReactionController (catalog emotes at milestones)
-    Effects/                       VFXController (particles, performance tier watchdog), FarVFXCuller.client
+    Effects/                       VFXController (particles, performance tier watchdog)
     World/                         the arena: build (authors Workspace.Arena) and bind (animates it: the street
                                    stage Arena.Street through ArenaStreet, the disco stage and truss through
-                                   ArenaStage and ArenaDisco), plus
-                                   StageBlockoutRenderer.client (keeps it on the beat), StageLighting and
+                                   ArenaStage and ArenaDisco), plus StageLighting and
                                    CameraController (the floor overview, or the highway's stage shot)
   ServerStorage/Tests/             specs for the pure Shared modules; Runner runs them in Studio Edit mode
   ServerStorage/ArchivedSongs/     every other song and the old ChartGenerator, out of the catalog, kept to bring back
@@ -163,27 +170,43 @@ tools/scripts/                     image helpers for UI art
 
 ## Architecture
 
-There is **no service framework**. No ModuleLoader, no Knit, no Packet library, no ProfileService,
-no Janitor. Do not introduce one, and do not write code that assumes one exists.
+The code follows the lifecycle used in AB Testing Place: two entry scripts, everything else a
+ModuleScript started by them. There is no Knit, no Packet library, no ProfileService and no Janitor;
+don't introduce one without asking.
 
-- **Requires are instance lookups.** `require(Shared:WaitForChild("Timing"))` on an entry script,
-  `require(script.Parent.Timing)` between sibling Shared modules. There is no require-by-string and
-  no `@game/...` alias in this project.
-- **Server scripts are `*.server.luau` and run top to bottom.** They are ordinary Scripts, not
-  lifecycle objects. There is no `Init`/`Start` pair.
+- **Two entry scripts, nothing else runs on its own.** `ServerScriptService.Server` (a Script) and
+  `StarterPlayerScripts.Client` (a LocalScript) call `Shared/Utility/Lifecycle.Boot` on
+  `ServerStorage.Server.Inits` and `ReplicatedStorage.Client.Inits`. Never add another Script or
+  LocalScript under `src/`: a Script does not run in ServerStorage and a LocalScript does not run in
+  ReplicatedStorage, and a stray one runs outside the boot order.
+- **Inits are the lifecycle.** An init is a ModuleScript under `Inits/` that returns a table with
+  `Start()`. Its module scope holds requires, remote lookups, constants, state and functions;
+  `Start()` holds the wiring (event connections, loops, handlers). Modules under `Inits/Priority`
+  run first, one at a time in name order, through `Init()`; an `Init()` that returns false stops the
+  boot. Every other init is then loaded with `SafeLoader` (a module that fails to load is named and
+  skipped) and its `Start()` is spawned, so inits start concurrently and one that yields never holds
+  up the rest. Module scope must never wait on something another init creates: the loader requires
+  the inits one after another.
+- **Requires are instance lookups.** `require(Shared:WaitForChild("Timing"))` across roots,
+  `require(script.Parent.Timing)` between siblings. There is no require-by-string and no `@game/...`
+  alias in this project.
 - **Services are classes.** `PlayerDataService.new()`, `RewardService.new(playerDataService)`.
-  `Backend.server.luau` constructs them once and holds them.
-- **`Backend` is published on `_G.DanceDanceStepBackend`,** and `RhythmService` reaches it through
-  `getBackend()`. This is the one global in the project and it exists because the two entry scripts
-  cannot require each other. Do not add a second global. If you need a new cross-script dependency,
-  hang it off the existing `Backend` table.
+  The `Backend` init constructs them once and holds them.
+- **Inits reach each other by require.** `RhythmService` gets the Backend through
+  `BackendInit.Get()`, which stays nil until Backend's `Start()` has wired every service. There
+  are no globals. If you need a new cross-init dependency, hang it off the `Backend` table or
+  expose a getter the same way.
+- **Shared/Packages** holds third-party code verbatim (`Loader`, `LemonSignal`); don't edit it.
+  **Shared/Utility** holds `Maid`, `SafeLoader`, `Stepper` and `Solvers` (ported from AB Testing
+  Place), `Lifecycle`, and `Signal`, the wrapper over LemonSignal. Make signals with
+  `Signal.new()`, never with LemonSignal directly.
 
 ### Networking
 
 1. **Declare the event in `Shared/RemoteContract.luau` first.** Give it a `name`, a `direction`, the
    `payload` keys, and a `rateLimitPerSecond` for anything client-to-server. Unlike a positional
    packet registry, entries here are keyed by name, so you may add one anywhere in the table.
-2. `RemoteBootstrap.server.luau` creates the RemoteEvent under `ReplicatedStorage.Remotes` at boot.
+2. The `RemoteBootstrap` priority init creates the RemoteEvent under `ReplicatedStorage.Remotes` at boot.
    You never create a RemoteEvent by hand.
 3. Both sides look it up with
    `remotes:WaitForChild(RemoteContract.Events.YourEvent.name)`.
@@ -245,7 +268,7 @@ down:
 - `Input/` turns devices into intents (a step, a tapped tile). It does not know what a step means.
 - `Controllers/` hold the logic and are the only place a remote is fired or listened to. Remotes come
   from `Net/Remotes`; a controller never looks one up itself.
-- `Main.client.luau` builds everything and passes each controller what it needs. Add a controller by
+- The `Main` init builds everything and passes each controller what it needs. Add a controller by
   writing the module and wiring it there. Don't grow `Main` or `HUDController` with logic.
 
 `RunController` holds a local `RhythmSession` purely to drive the telegraph and animation ahead of the
@@ -265,7 +288,7 @@ run's hints and the floor-event banner) are authored the same way in `StarterGui
 `StarterGui.Lobby`, bound by `SideMenu`, `MultiplayerPanel` and `HintBar`, and the windows its rail opens
 (Loadout, Shop, Settings) are `StarterGui.Menu`, bound by `MenuScreen`, `AbilityPicker`, `ShopPanel` and
 `SettingsPanel`. The arena is the other way round: it is parts in `Workspace.Arena`,
-authored once from `World/` and edited in Studio, and `StageBlockoutRenderer.client.luau` only binds
+authored once from `World/` and edited in Studio, and the `StageBlockoutRenderer` init only binds
 and animates them. If a place has no arena it is built at runtime from the same code. Where the stage sits is Workspace's `DanceFloorOrigin` attribute (default the world origin). A place
 with `DanceHub` set is a hub: the stage is visited from a station rather than being the whole world, and
 `Arena` and `DanceFloor` must be Persistent models stamped with a `Parts` attribute so streaming always
@@ -286,7 +309,7 @@ See [docs/UI_STYLE.md](docs/UI_STYLE.md) before changing how anything looks.
   `UPPER_SNAKE` constants. Services end in `Service`, controllers in `Controller`.
 - File order: `game:GetService` calls, then requires, then remote lookups, then constants, then the
   module table, then state, then functions, then the return.
-- No globals beyond the one documented above. No `shared`.
+- No globals. No `shared`.
 - `task.wait`/`task.spawn`/`task.delay`, never `wait`/`spawn`/`delay`.
 - Prefer early returns and guard clauses to nested `if`s.
 - Tag warnings with the game name: `warn("[DanceDanceStep] ...")`.

@@ -11,6 +11,9 @@ place; until then everything sits under Unreleased.
 
 ### Changed
 
+- The code now boots like AB Testing Place: one Script (`ServerScriptService.Server`) and one LocalScript (`StarterPlayerScripts.Client`) start every init under `ServerStorage.Server.Inits` and `ReplicatedStorage.Client.Inits`, priority inits first. Client code moved to `ReplicatedStorage.Client`, server code to `ServerStorage.Server`, and the `_G` Backend global is gone (`BackendInit.Get()`). Behaviour is unchanged; anyone syncing must pull this before their next Argon connect.
+- `Shared/Packages` (Loader, LemonSignal) and `Shared/Utility` (Lifecycle, SafeLoader, Signal, Maid, Stepper, Solvers) replace `Shared/Util`.
+
 - Style, Loadout and Shop are in the album style too: the print panel and header, slanted pink and dark tabs and buttons, plum cards with a pink frame on the picked one, and the moving background. Their layouts and behaviour are unchanged.
 
 - The PLAY menu is rebuilt in the album style: two mode covers (Stage Challenge, Free Play), the who-with button and a big PLAY button. Tapping a cover now picks the mode and PLAY starts it; before, tapping a mode started it straight away. The menu rises in like the other windows instead of flying in from the side.

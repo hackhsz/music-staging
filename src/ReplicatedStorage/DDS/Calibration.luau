@@ -13,8 +13,8 @@ local Config = require(DDS.Config)
 local BeatClock = require(DDS.BeatClock)
 local SongCatalog = require(DDS.SongCatalog)
 local AudioOffset = require(DDS.AudioOffset)
-local Maid = require(ReplicatedStorage.Shared.Util.Maid)
-local Signal = require(ReplicatedStorage.Shared.Util.Signal)
+local Maid = require(ReplicatedStorage.Shared.Utility.Maid)
+local Signal = require(ReplicatedStorage.Shared.Utility.Signal)
 
 local function medianOf(sorted: { number }): number
 	local count = #sorted

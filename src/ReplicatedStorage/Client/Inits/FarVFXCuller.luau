@@ -1,5 +1,5 @@
 --!strict
--- FarVFXCuller.client.luau
+-- FarVFXCuller
 --
 -- Distance-based culling for background / decorative VFX (ParticleEmitters and
 -- Beams) so distant scenery (waterfalls, sky props, far islands) doesn't burn
@@ -113,42 +113,48 @@ local function setState(entry: Entry, on: boolean)
 	end
 end
 
-for _, inst in CollectionService:GetTagged(TAG) do
-	track(inst)
-end
-CollectionService:GetInstanceAddedSignal(TAG):Connect(track)
-CollectionService:GetInstanceRemovedSignal(TAG):Connect(untrack)
+local FarVFXCuller = {}
 
-local accum = 0
-RunService.Heartbeat:Connect(function(dt: number)
-	accum += dt
-	if accum < UPDATE_INTERVAL then
-		return
+function FarVFXCuller.Start()
+	for _, inst in CollectionService:GetTagged(TAG) do
+		track(inst)
 	end
-	accum = 0
+	CollectionService:GetInstanceAddedSignal(TAG):Connect(track)
+	CollectionService:GetInstanceRemovedSignal(TAG):Connect(untrack)
 
-	local focus = getFocusPosition()
-	if not focus then
-		return
-	end
+	local accum = 0
+	RunService.Heartbeat:Connect(function(dt: number)
+		accum += dt
+		if accum < UPDATE_INTERVAL then
+			return
+		end
+		accum = 0
 
-	for inst, entry in entries do
-		if not inst.Parent then
-			entries[inst] = nil
-			continue
+		local focus = getFocusPosition()
+		if not focus then
+			return
 		end
-		local anchor = entry.anchor
-		if not anchor or not anchor.Parent then
-			anchor = anchorPart(inst)
-			entry.anchor = anchor
-		end
-		if anchor then
-			local dist = (anchor.Position - focus).Magnitude
-			if entry.on and dist >= FAR_DISTANCE then
-				setState(entry, false)
-			elseif not entry.on and dist <= NEAR_DISTANCE then
-				setState(entry, true)
+
+		for inst, entry in entries do
+			if not inst.Parent then
+				entries[inst] = nil
+				continue
+			end
+			local anchor = entry.anchor
+			if not anchor or not anchor.Parent then
+				anchor = anchorPart(inst)
+				entry.anchor = anchor
+			end
+			if anchor then
+				local dist = (anchor.Position - focus).Magnitude
+				if entry.on and dist >= FAR_DISTANCE then
+					setState(entry, false)
+				elseif not entry.on and dist <= NEAR_DISTANCE then
+					setState(entry, true)
+				end
 			end
 		end
-	end
-end)
+	end)
+end
+
+return FarVFXCuller

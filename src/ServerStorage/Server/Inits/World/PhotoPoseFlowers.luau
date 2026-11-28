@@ -66,12 +66,18 @@ local function setupFlower(flower)
 	end)
 end
 
--- Wire up all flowers currently tagged, plus any tagged later at runtime
-for _, flower in ipairs(CollectionService:GetTagged("PhotoPoseFlower")) do
-	setupFlower(flower)
-end
-CollectionService:GetInstanceAddedSignal("PhotoPoseFlower"):Connect(setupFlower)
+local PhotoPoseFlowers = {}
 
-game.Players.PlayerRemoving:Connect(function(player)
-	playerSessions[player] = nil
-end)
+function PhotoPoseFlowers.Start()
+	-- Wire up all flowers currently tagged, plus any tagged later at runtime
+	for _, flower in ipairs(CollectionService:GetTagged("PhotoPoseFlower")) do
+		setupFlower(flower)
+	end
+	CollectionService:GetInstanceAddedSignal("PhotoPoseFlower"):Connect(setupFlower)
+
+	game.Players.PlayerRemoving:Connect(function(player)
+		playerSessions[player] = nil
+	end)
+end
+
+return PhotoPoseFlowers

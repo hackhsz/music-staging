@@ -23,9 +23,10 @@ local CoreRules = require(Shared:WaitForChild("CoreRules"))
 local ArrivalLedger = require(Shared:WaitForChild("ArrivalLedger"))
 local SongSchema = require(Shared:WaitForChild("SongSchema"))
 
-local Services = script.Parent:WaitForChild("Services")
+local Services = script.Parent.Parent:WaitForChild("Services")
 local RateLimiter = require(Services:WaitForChild("RateLimiter"))
 local AbilityService = require(Services:WaitForChild("AbilityService"))
+local BackendInit = require(script.Parent:WaitForChild("Backend"))
 
 local remotes = ReplicatedStorage:WaitForChild(RemoteContract.FolderName)
 local songCatalogRemote = remotes:WaitForChild(RemoteContract.Events.SongCatalog.name)
@@ -87,7 +88,7 @@ local function mapForLayout(map: any, layoutId: string): any
 end
 
 local function getBackend()
-	return _G.DanceDanceStepBackend
+	return BackendInit.Get()
 end
 
 -- The lesson counts toward the onboarding funnel; every other run is a session of
@@ -1563,596 +1564,602 @@ local function getMatchPlayers(player: Player): { Player }
 	return { player }
 end
 
-Players.PlayerAdded:Connect(function(player)
-	ensureMatchHooks()
+local RhythmService = {}
 
-	task.delay(1, function()
-		if player.Parent == Players then
-			sendSongCatalog(player)
-			syncTimingOffset(player)
+function RhythmService.Start()
+	Players.PlayerAdded:Connect(function(player)
+		ensureMatchHooks()
+
+		task.delay(1, function()
+			if player.Parent == Players then
+				sendSongCatalog(player)
+				syncTimingOffset(player)
+			end
+		end)
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		sessions[player] = nil
+		timingOffsets[player] = nil
+		rateLimiter:clear(player)
+	end)
+
+	requestRestartRemote.OnServerEvent:Connect(function(player)
+		if not rateLimiter:allow(player, "RequestRestart", RemoteContract.Events.RequestRestart.rateLimitPerSecond) then
+			return
+		end
+
+		if player.Parent ~= Players then
+			return
+		end
+
+		local players = getMatchPlayers(player)
+		local hostState = sessions[players[1]]
+		local songId = if hostState ~= nil then hostState.selectedSongId else nil
+
+		if #players == 1 then
+			startSession(player, songId)
+		elseif players[1] == player then
+			startMatchSong(players, songId)
 		end
 	end)
-end)
 
-Players.PlayerRemoving:Connect(function(player)
-	sessions[player] = nil
-	timingOffsets[player] = nil
-	rateLimiter:clear(player)
-end)
-
-requestRestartRemote.OnServerEvent:Connect(function(player)
-	if not rateLimiter:allow(player, "RequestRestart", RemoteContract.Events.RequestRestart.rateLimitPerSecond) then
-		return
-	end
-
-	if player.Parent ~= Players then
-		return
-	end
-
-	local players = getMatchPlayers(player)
-	local hostState = sessions[players[1]]
-	local songId = if hostState ~= nil then hostState.selectedSongId else nil
-
-	if #players == 1 then
-		startSession(player, songId)
-	elseif players[1] == player then
-		startMatchSong(players, songId)
-	end
-end)
-
--- Leaving the stage in a hub place. A solo run left mid-song is dropped and pays
--- nothing; a match run cannot be left, or the rival would be stranded.
-returnToHubRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "ReturnToHub", RemoteContract.Events.ReturnToHub.rateLimitPerSecond) then
-		return
-	end
-
-	if type(payload) ~= "table" then
-		return
-	end
-
-	local state = sessions[player]
-	local backend = getBackend()
-
-	if state ~= nil and not state.completed then
-		if #getMatchPlayers(player) > 1 then
+	-- Leaving the stage in a hub place. A solo run left mid-song is dropped and pays
+	-- nothing; a match run cannot be left, or the rival would be stranded.
+	returnToHubRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "ReturnToHub", RemoteContract.Events.ReturnToHub.rateLimitPerSecond) then
 			return
 		end
 
-		sessions[player] = nil
-
-		-- Walking out of the lesson is skipping it.
-		if state.tutorial and backend ~= nil and backend.Onboarding ~= nil then
-			backend.Onboarding:completeTutorial(player, false)
-		end
-	end
-
-	if backend ~= nil and backend.Stations ~= nil then
-		backend.Stations:returnToHub(player)
-	end
-end)
-
--- Pause / resume (issue 041): freezes the beat timeline by shifting the session
--- start time forward by the paused duration. Server-authoritative; disallowed in
--- an active 2-player match.
-requestPauseRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "RequestPause", RemoteContract.Events.RequestPause.rateLimitPerSecond) then
-		return
-	end
-
-	local state = sessions[player]
-
-	if state == nil or state.completed or state.session:isFinished() then
-		return
-	end
-
-	local backend = getBackend()
-
-	if backend ~= nil and backend.Multiplayer ~= nil then
-		local status = backend.Multiplayer:buildStatusFor(player)
-
-		if type(status) == "table" and status.playerCount == 2 then
-			-- No pausing in competitive/co-op play.
-			pauseStateRemote:FireClient(player, { paused = false })
+		if type(payload) ~= "table" then
 			return
 		end
-	end
 
-	local wantPaused = type(payload) == "table" and payload.paused == true
-	local now = os.clock()
+		local state = sessions[player]
+		local backend = getBackend()
 
-	if wantPaused and not state.paused then
-		state.paused = true
-		state.pauseStartedAt = now
-	elseif not wantPaused and state.paused then
-		state.session.startTime += now - (state.pauseStartedAt or now)
-		state.paused = false
-		state.pauseStartedAt = nil
-	end
+		if state ~= nil and not state.completed then
+			if #getMatchPlayers(player) > 1 then
+				return
+			end
 
-	pauseStateRemote:FireClient(player, { paused = state.paused })
-end)
+			sessions[player] = nil
 
-requestSongRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "RequestSong", RemoteContract.Events.RequestSong.rateLimitPerSecond) then
-		return
-	end
+			-- Walking out of the lesson is skipping it.
+			if state.tutorial and backend ~= nil and backend.Onboarding ~= nil then
+				backend.Onboarding:completeTutorial(player, false)
+			end
+		end
 
-	if type(payload) ~= "table" or type(payload.songId) ~= "string" then
-		return
-	end
+		if backend ~= nil and backend.Stations ~= nil then
+			backend.Stations:returnToHub(player)
+		end
+	end)
 
-	if player.Parent ~= Players or SongMapCatalog.getMap(payload.songId) == nil then
-		return
-	end
-
-	-- Locked songs are server-rejected; the client gates selection too.
-	if not SongCollection.isUnlocked(payload.songId, getProfile(player)) then
-		return
-	end
-
-	ensureMatchHooks()
-
-	local players = getMatchPlayers(player)
-
-	if #players == 1 then
-		startSession(player, payload.songId)
-		return
-	end
-
-	-- In a match the host picks, and the song has to be open to both players.
-	if players[1] ~= player then
-		return
-	end
-
-	for _, matchPlayer in players do
-		if not SongCollection.isUnlocked(payload.songId, getProfile(matchPlayer)) then
+	-- Pause / resume (issue 041): freezes the beat timeline by shifting the session
+	-- start time forward by the paused duration. Server-authoritative; disallowed in
+	-- an active 2-player match.
+	requestPauseRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "RequestPause", RemoteContract.Events.RequestPause.rateLimitPerSecond) then
 			return
 		end
-	end
 
-	startMatchSong(players, payload.songId)
-end)
-
--- A first-join lesson drill: solo only, never over a run in progress, and only
--- the next drill not yet passed (or one already passed).
-startTutorialRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "StartTutorial", RemoteContract.Events.StartTutorial.rateLimitPerSecond) then
-		return
-	end
-
-	if type(payload) ~= "table" or type(payload.drill) ~= "number" or player.Parent ~= Players then
-		return
-	end
-
-	local state = sessions[player]
-	local backend = getBackend()
-
-	if (state ~= nil and not state.completed) or #getMatchPlayers(player) > 1 then
-		return
-	end
-
-	if backend == nil or backend.Onboarding == nil or not backend.Onboarding:canStartDrill(player, payload.drill) then
-		return
-	end
-
-	startSession(player, TutorialChart.drillId(payload.drill))
-end)
-
-skipTutorialRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "SkipTutorial", RemoteContract.Events.SkipTutorial.rateLimitPerSecond) then
-		return
-	end
-
-	if type(payload) ~= "table" then
-		return
-	end
-
-	local state = sessions[player]
-
-	if state ~= nil and state.tutorial and not state.completed then
-		sessions[player] = nil
-	end
-
-	local backend = getBackend()
-
-	if backend ~= nil and backend.Onboarding ~= nil then
-		backend.Onboarding:completeTutorial(player, false)
-	end
-end)
-
-submitHitRemote.OnServerEvent:Connect(function(player, payload)
-	local state = sessions[player]
-
-	if state == nil or type(payload) ~= "table" then
-		return
-	end
-
-	if not rateLimiter:allow(player, "SubmitHit", RemoteContract.Events.SubmitHit.rateLimitPerSecond) then
-		return
-	end
-
-	-- onBeat starts holds and slides from the landing, like every other note.
-	if state.coreMode == CoreRules.Modes.OnBeat then
-		return
-	end
-
-	local now = os.clock()
-	updatePositionAudit(player, state, now)
-	updateSlideTracking(state, now)
-
-	if tonumber(payload.stepIndex) ~= state.session.nextStepIndex then
-		recordSuspicious(state, "stale_or_future_step_index")
-		return
-	end
-
-	local step = state.session:getCurrentStep()
-
-	if step == nil then
-		return
-	end
-
-	-- Plain steps use stand-and-wait: they are judged by where the player is
-	-- standing when the beat lands (see processDueSteps), so taps for them are
-	-- ignored here. Only holds and slides are started via an input.
-	if step.type ~= "hold" and step.type ~= "slide" then
-		return
-	end
-
-	if state.attemptedSteps[state.session.nextStepIndex] then
-		recordSuspicious(state, "repeated_step_attempt")
-		return
-	end
-
-	state.attemptedSteps[state.session.nextStepIndex] = true
-
-	local stepIndex = state.session.nextStepIndex
-	local timingOffset = judgedOffset(player, state)
-	local hitTime = state.session:getElapsed(now) - timingOffset
-	local targetTime = state.session:getStepTargetTime(step)
-	local hitCoord = state.currentCoord
-	local result
-
-	if hitCoord == nil then
-		-- Never fabricate a coordinate for a player who is off the board or
-		-- has no character; the submission is judged as a miss.
-		result = {
-			accepted = false,
-			grade = "Miss",
-			reason = "no_position",
-		}
-		recordSuspicious(state, "no_position")
-	else
-		result = HitValidator.validate(step, hitCoord, hitTime, targetTime)
-	end
-
-	local dwellTime = state.coordEnteredAt ~= nil and now - state.coordEnteredAt or 0
-
-	if result.accepted and dwellTime < Timing.MinTileDwellSeconds then
-		result = {
-			accepted = false,
-			grade = "Miss",
-			reason = "tile_dwell_too_short",
-		}
-		recordSuspicious(state, "tile_dwell_too_short")
-	end
-
-	-- Signed early/late feedback for the HUD, after latency calibration.
-	result.deltaMs = toMs(hitTime - targetTime)
-
-	if result.accepted and step.type == "hold" then
-		-- A hold is not finalized at tap time: the session heartbeat verifies
-		-- the player stays on the tile until targetTime + holdSeconds and only
-		-- then fires HitResult, so the session does not advance yet.
-		local holdSeconds = tonumber(step.holdSeconds) or 0.35
-
-		state.holding = {
-			step = step,
-			stepIndex = stepIndex,
-			grade = result.grade,
-			deltaMs = result.deltaMs,
-			startRawElapsed = state.session:getElapsed(now),
-			endRawElapsed = targetTime + holdSeconds + timingOffset,
-		}
-
-		return
-	end
-
-	if result.accepted and step.type == "slide" and type(step.path) == "table" then
-		local tracking = state.slideTracking
-		local pathComplete = tracking ~= nil
-			and tracking.stepIndex == stepIndex
-			and tracking.pathPos >= #step.path
-
-		if not pathComplete then
-			-- Reached the end tile in time but skipped path tiles: downgrade
-			-- to Good and withhold the slide completion bonus.
-			result = {
-				accepted = true,
-				grade = "Good",
-				reason = "slide_path_incomplete",
-				deltaMs = result.deltaMs,
-				withholdTypeBonus = true,
-			}
-		end
-	end
-
-	state.session:advance()
-	finalizeStep(player, state, step, stepIndex, result, now)
-end)
-
--- The client reports when its own step landed, because the replicated position
--- the server watches arrives 140-300 ms late, far too coarse to grade against a
--- beat. The claim is only trusted when it sits close to this player's running
--- delay estimate, which caps what shifting a claim can buy.
-reportArrivalRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "ReportArrival", RemoteContract.Events.ReportArrival.rateLimitPerSecond) then
-		return
-	end
-
-	if type(payload) ~= "table" then
-		return
-	end
-
-	local x = tonumber(payload.x)
-	local y = tonumber(payload.y)
-	local claimedSync = tonumber(payload.t)
-
-	if x == nil or y == nil or claimedSync == nil or claimedSync ~= claimedSync then
-		return
-	end
-
-	if not Board.isValidCoord(x, y) then
-		return
-	end
-
-	local state = sessions[player]
-
-	if state == nil or state.completed or state.paused then
-		return
-	end
-
-	noteMusicShift(state, payload)
-
-	local now = os.clock()
-	updatePositionAudit(player, state, now)
-
-	-- GetServerTimeNow shares one base across server and clients; os.clock does
-	-- not, so convert the claim into the clock the session is judged on.
-	local clockShift = now - Workspace:GetServerTimeNow()
-	local claimed = claimedSync + clockShift
-	local onBeat = state.coreMode == CoreRules.Modes.OnBeat
-	local stepSeconds = Timing.getStepSeconds(state.session.map.difficulty)
-	local previousLanding = state.lastLandingAt
-
-	-- onBeat judges the press, so a step quicker than a step-time would let a
-	-- late press pass as an earlier one.
-	if onBeat and previousLanding ~= nil and claimed - previousLanding < stepSeconds - Timing.OnBeatStepTolerance then
-		recordSuspicious(state, "step_faster_than_step_time")
-		return
-	end
-
-	local pressAt = nil
-	local claimedPress = tonumber(payload.p)
-
-	if onBeat and claimedPress ~= nil then
-		local press = claimedPress + clockShift
-		local lead = claimed - press
-
-		if press ~= press or lead < stepSeconds - Timing.OnBeatStepTolerance or lead > Timing.OnBeatMaxPressLead then
-			recordSuspicious(state, "implausible_press_time")
-		else
-			-- A buffered press counts from when its step could start, as in the
-			-- Music Game, so pressing early into the buffer is never judged early.
-			pressAt = if previousLanding ~= nil then math.max(press, previousLanding) else press
-		end
-	end
-
-	local refused = state.ledger:submit(x, y, claimed, now, state.currentCoord, state.coordEnteredAt)
-
-	if refused == nil then
-		local claim = state.ledger.claims[#state.ledger.claims]
-		state.lastLandingAt = claim.at
-		claim.pressAt = if pressAt ~= nil then pressAt + (claim.at - claimed) else nil
-	end
-
-	if refused ~= nil then
-		recordSuspicious(state, refused)
-	end
-end)
-
-submitPressRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "SubmitPress", RemoteContract.Events.SubmitPress.rateLimitPerSecond) then
-		return
-	end
-
-	if type(payload) ~= "table" then
-		return
-	end
-
-	local lane = tonumber(payload.lane)
-	local claimedSync = tonumber(payload.t)
-
-	if lane == nil or claimedSync == nil or claimedSync ~= claimedSync then
-		return
-	end
-
-	if lane ~= math.floor(lane) or lane < 1 or lane > HIGHWAY_LANES then
-		return
-	end
-
-	local state = sessions[player]
-
-	if state == nil or state.completed or state.paused or state.coreMode ~= CoreRules.Modes.Highway then
-		return
-	end
-
-	noteMusicShift(state, payload)
-
-	local now = os.clock()
-	local claimed = claimedSync + (now - Workspace:GetServerTimeNow())
-	local refused = state.ledger:submitPress(lane, claimed, now)
-
-	if refused ~= nil then
-		recordSuspicious(state, refused)
-	end
-end)
-
-submitReleaseRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "SubmitRelease", RemoteContract.Events.SubmitRelease.rateLimitPerSecond) then
-		return
-	end
-
-	if type(payload) ~= "table" then
-		return
-	end
-
-	local lane = tonumber(payload.lane)
-	local claimedSync = tonumber(payload.t)
-
-	if lane == nil or claimedSync == nil or claimedSync ~= claimedSync then
-		return
-	end
-
-	if lane ~= math.floor(lane) or lane < 1 or lane > HIGHWAY_LANES then
-		return
-	end
-
-	local state = sessions[player]
-
-	if state == nil or state.completed or state.paused or state.coreMode ~= CoreRules.Modes.Highway then
-		return
-	end
-
-	noteMusicShift(state, payload)
-
-	local now = os.clock()
-	local claimed = claimedSync + (now - Workspace:GetServerTimeNow())
-	local refused = state.ledger:submitRelease(lane, claimed, now)
-
-	if refused ~= nil then
-		recordSuspicious(state, refused)
-	end
-end)
-
-submitClapRemote.OnServerEvent:Connect(function(player, payload)
-	if not rateLimiter:allow(player, "SubmitClap", RemoteContract.Events.SubmitClap.rateLimitPerSecond) then
-		return
-	end
-
-	if type(payload) ~= "table" then
-		return
-	end
-
-	local claimedSync = tonumber(payload.t)
-
-	if claimedSync == nil or claimedSync ~= claimedSync then
-		return
-	end
-
-	local state = sessions[player]
-
-	if state == nil or state.completed or state.paused then
-		return
-	end
-
-	if state.coreMode ~= CoreRules.Modes.OnBeat or state.boardLayout ~= BoardLayouts.Default then
-		recordSuspicious(state, "clap_off_pad")
-		return
-	end
-
-	noteMusicShift(state, payload)
-
-	local now = os.clock()
-	local claimed = claimedSync + (now - Workspace:GetServerTimeNow())
-	local refused = state.ledger:submitClap(claimed, now)
-
-	if refused ~= nil then
-		recordSuspicious(state, refused)
-	end
-end)
-
-setTimingOffsetRemote.OnServerEvent:Connect(function(player, payload)
-	if type(payload) ~= "table" then
-		return
-	end
-
-	if not rateLimiter:allow(player, "SetTimingOffset", RemoteContract.Events.SetTimingOffset.rateLimitPerSecond) then
-		return
-	end
-
-	local offset = tonumber(payload.offsetSeconds)
-
-	if offset == nil or offset ~= offset then
-		return
-	end
-
-	offset = math.clamp(offset, -Timing.MaxTimingOffsetSeconds, Timing.MaxTimingOffsetSeconds)
-
-	local entry = getTimingOffsetState(player)
-
-	if payload.deviceDefault == true then
-		-- Device defaults never override a saved or manual calibration.
-		if not entry.calibrated then
-			entry.offset = offset
-		end
-	else
-		entry.offset = offset
-		entry.calibrated = true
-
-		local profile = getProfile(player)
-
-		if profile ~= nil then
-			if type(profile.settings) ~= "table" then
-				profile.settings = {}
-			end
-
-			profile.settings.timingOffsetSeconds = entry.offset
-			profile.settings.timingOffsetCalibrated = true
-			getBackend().PlayerData:markDirty(player)
-		end
-	end
-
-	syncTimingOffset(player)
-end)
-
-RunService.Heartbeat:Connect(function()
-	local now = os.clock()
-
-	for player, state in sessions do
-		if player.Parent == Players and state.session ~= nil and not state.session:isFinished() and not state.paused then
-			updatePositionAudit(player, state, now)
-
-			for _, reason in state.ledger:expire(now) do
-				recordSuspicious(state, reason)
-			end
-
-			processDueItems(player, state, now)
-			abilityService:tick(player, state, now)
-
-			if state.holding ~= nil then
-				-- While a hold is in progress its step has not advanced yet,
-				-- so expiry checks must wait for the hold to finalize.
-				updateHolding(player, state, now)
-			else
-				updateSlideTracking(state, now)
-				processDueSteps(player, state, now)
-			end
-		end
-	end
-end)
-
--- Backend may start after this script, so its run check is handed over once it exists.
-task.spawn(function()
-	while getBackend() == nil do
-		task.wait(0.5)
-	end
-
-	getBackend().isInRun = function(player: Player): boolean
 		local state = sessions[player]
 
-		return state ~= nil and not state.completed
-	end
-end)
+		if state == nil or state.completed or state.session:isFinished() then
+			return
+		end
 
-print("[DanceDanceStep] RhythmService started")
+		local backend = getBackend()
+
+		if backend ~= nil and backend.Multiplayer ~= nil then
+			local status = backend.Multiplayer:buildStatusFor(player)
+
+			if type(status) == "table" and status.playerCount == 2 then
+				-- No pausing in competitive/co-op play.
+				pauseStateRemote:FireClient(player, { paused = false })
+				return
+			end
+		end
+
+		local wantPaused = type(payload) == "table" and payload.paused == true
+		local now = os.clock()
+
+		if wantPaused and not state.paused then
+			state.paused = true
+			state.pauseStartedAt = now
+		elseif not wantPaused and state.paused then
+			state.session.startTime += now - (state.pauseStartedAt or now)
+			state.paused = false
+			state.pauseStartedAt = nil
+		end
+
+		pauseStateRemote:FireClient(player, { paused = state.paused })
+	end)
+
+	requestSongRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "RequestSong", RemoteContract.Events.RequestSong.rateLimitPerSecond) then
+			return
+		end
+
+		if type(payload) ~= "table" or type(payload.songId) ~= "string" then
+			return
+		end
+
+		if player.Parent ~= Players or SongMapCatalog.getMap(payload.songId) == nil then
+			return
+		end
+
+		-- Locked songs are server-rejected; the client gates selection too.
+		if not SongCollection.isUnlocked(payload.songId, getProfile(player)) then
+			return
+		end
+
+		ensureMatchHooks()
+
+		local players = getMatchPlayers(player)
+
+		if #players == 1 then
+			startSession(player, payload.songId)
+			return
+		end
+
+		-- In a match the host picks, and the song has to be open to both players.
+		if players[1] ~= player then
+			return
+		end
+
+		for _, matchPlayer in players do
+			if not SongCollection.isUnlocked(payload.songId, getProfile(matchPlayer)) then
+				return
+			end
+		end
+
+		startMatchSong(players, payload.songId)
+	end)
+
+	-- A first-join lesson drill: solo only, never over a run in progress, and only
+	-- the next drill not yet passed (or one already passed).
+	startTutorialRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "StartTutorial", RemoteContract.Events.StartTutorial.rateLimitPerSecond) then
+			return
+		end
+
+		if type(payload) ~= "table" or type(payload.drill) ~= "number" or player.Parent ~= Players then
+			return
+		end
+
+		local state = sessions[player]
+		local backend = getBackend()
+
+		if (state ~= nil and not state.completed) or #getMatchPlayers(player) > 1 then
+			return
+		end
+
+		if backend == nil or backend.Onboarding == nil or not backend.Onboarding:canStartDrill(player, payload.drill) then
+			return
+		end
+
+		startSession(player, TutorialChart.drillId(payload.drill))
+	end)
+
+	skipTutorialRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "SkipTutorial", RemoteContract.Events.SkipTutorial.rateLimitPerSecond) then
+			return
+		end
+
+		if type(payload) ~= "table" then
+			return
+		end
+
+		local state = sessions[player]
+
+		if state ~= nil and state.tutorial and not state.completed then
+			sessions[player] = nil
+		end
+
+		local backend = getBackend()
+
+		if backend ~= nil and backend.Onboarding ~= nil then
+			backend.Onboarding:completeTutorial(player, false)
+		end
+	end)
+
+	submitHitRemote.OnServerEvent:Connect(function(player, payload)
+		local state = sessions[player]
+
+		if state == nil or type(payload) ~= "table" then
+			return
+		end
+
+		if not rateLimiter:allow(player, "SubmitHit", RemoteContract.Events.SubmitHit.rateLimitPerSecond) then
+			return
+		end
+
+		-- onBeat starts holds and slides from the landing, like every other note.
+		if state.coreMode == CoreRules.Modes.OnBeat then
+			return
+		end
+
+		local now = os.clock()
+		updatePositionAudit(player, state, now)
+		updateSlideTracking(state, now)
+
+		if tonumber(payload.stepIndex) ~= state.session.nextStepIndex then
+			recordSuspicious(state, "stale_or_future_step_index")
+			return
+		end
+
+		local step = state.session:getCurrentStep()
+
+		if step == nil then
+			return
+		end
+
+		-- Plain steps use stand-and-wait: they are judged by where the player is
+		-- standing when the beat lands (see processDueSteps), so taps for them are
+		-- ignored here. Only holds and slides are started via an input.
+		if step.type ~= "hold" and step.type ~= "slide" then
+			return
+		end
+
+		if state.attemptedSteps[state.session.nextStepIndex] then
+			recordSuspicious(state, "repeated_step_attempt")
+			return
+		end
+
+		state.attemptedSteps[state.session.nextStepIndex] = true
+
+		local stepIndex = state.session.nextStepIndex
+		local timingOffset = judgedOffset(player, state)
+		local hitTime = state.session:getElapsed(now) - timingOffset
+		local targetTime = state.session:getStepTargetTime(step)
+		local hitCoord = state.currentCoord
+		local result
+
+		if hitCoord == nil then
+			-- Never fabricate a coordinate for a player who is off the board or
+			-- has no character; the submission is judged as a miss.
+			result = {
+				accepted = false,
+				grade = "Miss",
+				reason = "no_position",
+			}
+			recordSuspicious(state, "no_position")
+		else
+			result = HitValidator.validate(step, hitCoord, hitTime, targetTime)
+		end
+
+		local dwellTime = state.coordEnteredAt ~= nil and now - state.coordEnteredAt or 0
+
+		if result.accepted and dwellTime < Timing.MinTileDwellSeconds then
+			result = {
+				accepted = false,
+				grade = "Miss",
+				reason = "tile_dwell_too_short",
+			}
+			recordSuspicious(state, "tile_dwell_too_short")
+		end
+
+		-- Signed early/late feedback for the HUD, after latency calibration.
+		result.deltaMs = toMs(hitTime - targetTime)
+
+		if result.accepted and step.type == "hold" then
+			-- A hold is not finalized at tap time: the session heartbeat verifies
+			-- the player stays on the tile until targetTime + holdSeconds and only
+			-- then fires HitResult, so the session does not advance yet.
+			local holdSeconds = tonumber(step.holdSeconds) or 0.35
+
+			state.holding = {
+				step = step,
+				stepIndex = stepIndex,
+				grade = result.grade,
+				deltaMs = result.deltaMs,
+				startRawElapsed = state.session:getElapsed(now),
+				endRawElapsed = targetTime + holdSeconds + timingOffset,
+			}
+
+			return
+		end
+
+		if result.accepted and step.type == "slide" and type(step.path) == "table" then
+			local tracking = state.slideTracking
+			local pathComplete = tracking ~= nil
+				and tracking.stepIndex == stepIndex
+				and tracking.pathPos >= #step.path
+
+			if not pathComplete then
+				-- Reached the end tile in time but skipped path tiles: downgrade
+				-- to Good and withhold the slide completion bonus.
+				result = {
+					accepted = true,
+					grade = "Good",
+					reason = "slide_path_incomplete",
+					deltaMs = result.deltaMs,
+					withholdTypeBonus = true,
+				}
+			end
+		end
+
+		state.session:advance()
+		finalizeStep(player, state, step, stepIndex, result, now)
+	end)
+
+	-- The client reports when its own step landed, because the replicated position
+	-- the server watches arrives 140-300 ms late, far too coarse to grade against a
+	-- beat. The claim is only trusted when it sits close to this player's running
+	-- delay estimate, which caps what shifting a claim can buy.
+	reportArrivalRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "ReportArrival", RemoteContract.Events.ReportArrival.rateLimitPerSecond) then
+			return
+		end
+
+		if type(payload) ~= "table" then
+			return
+		end
+
+		local x = tonumber(payload.x)
+		local y = tonumber(payload.y)
+		local claimedSync = tonumber(payload.t)
+
+		if x == nil or y == nil or claimedSync == nil or claimedSync ~= claimedSync then
+			return
+		end
+
+		if not Board.isValidCoord(x, y) then
+			return
+		end
+
+		local state = sessions[player]
+
+		if state == nil or state.completed or state.paused then
+			return
+		end
+
+		noteMusicShift(state, payload)
+
+		local now = os.clock()
+		updatePositionAudit(player, state, now)
+
+		-- GetServerTimeNow shares one base across server and clients; os.clock does
+		-- not, so convert the claim into the clock the session is judged on.
+		local clockShift = now - Workspace:GetServerTimeNow()
+		local claimed = claimedSync + clockShift
+		local onBeat = state.coreMode == CoreRules.Modes.OnBeat
+		local stepSeconds = Timing.getStepSeconds(state.session.map.difficulty)
+		local previousLanding = state.lastLandingAt
+
+		-- onBeat judges the press, so a step quicker than a step-time would let a
+		-- late press pass as an earlier one.
+		if onBeat and previousLanding ~= nil and claimed - previousLanding < stepSeconds - Timing.OnBeatStepTolerance then
+			recordSuspicious(state, "step_faster_than_step_time")
+			return
+		end
+
+		local pressAt = nil
+		local claimedPress = tonumber(payload.p)
+
+		if onBeat and claimedPress ~= nil then
+			local press = claimedPress + clockShift
+			local lead = claimed - press
+
+			if press ~= press or lead < stepSeconds - Timing.OnBeatStepTolerance or lead > Timing.OnBeatMaxPressLead then
+				recordSuspicious(state, "implausible_press_time")
+			else
+				-- A buffered press counts from when its step could start, as in the
+				-- Music Game, so pressing early into the buffer is never judged early.
+				pressAt = if previousLanding ~= nil then math.max(press, previousLanding) else press
+			end
+		end
+
+		local refused = state.ledger:submit(x, y, claimed, now, state.currentCoord, state.coordEnteredAt)
+
+		if refused == nil then
+			local claim = state.ledger.claims[#state.ledger.claims]
+			state.lastLandingAt = claim.at
+			claim.pressAt = if pressAt ~= nil then pressAt + (claim.at - claimed) else nil
+		end
+
+		if refused ~= nil then
+			recordSuspicious(state, refused)
+		end
+	end)
+
+	submitPressRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "SubmitPress", RemoteContract.Events.SubmitPress.rateLimitPerSecond) then
+			return
+		end
+
+		if type(payload) ~= "table" then
+			return
+		end
+
+		local lane = tonumber(payload.lane)
+		local claimedSync = tonumber(payload.t)
+
+		if lane == nil or claimedSync == nil or claimedSync ~= claimedSync then
+			return
+		end
+
+		if lane ~= math.floor(lane) or lane < 1 or lane > HIGHWAY_LANES then
+			return
+		end
+
+		local state = sessions[player]
+
+		if state == nil or state.completed or state.paused or state.coreMode ~= CoreRules.Modes.Highway then
+			return
+		end
+
+		noteMusicShift(state, payload)
+
+		local now = os.clock()
+		local claimed = claimedSync + (now - Workspace:GetServerTimeNow())
+		local refused = state.ledger:submitPress(lane, claimed, now)
+
+		if refused ~= nil then
+			recordSuspicious(state, refused)
+		end
+	end)
+
+	submitReleaseRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "SubmitRelease", RemoteContract.Events.SubmitRelease.rateLimitPerSecond) then
+			return
+		end
+
+		if type(payload) ~= "table" then
+			return
+		end
+
+		local lane = tonumber(payload.lane)
+		local claimedSync = tonumber(payload.t)
+
+		if lane == nil or claimedSync == nil or claimedSync ~= claimedSync then
+			return
+		end
+
+		if lane ~= math.floor(lane) or lane < 1 or lane > HIGHWAY_LANES then
+			return
+		end
+
+		local state = sessions[player]
+
+		if state == nil or state.completed or state.paused or state.coreMode ~= CoreRules.Modes.Highway then
+			return
+		end
+
+		noteMusicShift(state, payload)
+
+		local now = os.clock()
+		local claimed = claimedSync + (now - Workspace:GetServerTimeNow())
+		local refused = state.ledger:submitRelease(lane, claimed, now)
+
+		if refused ~= nil then
+			recordSuspicious(state, refused)
+		end
+	end)
+
+	submitClapRemote.OnServerEvent:Connect(function(player, payload)
+		if not rateLimiter:allow(player, "SubmitClap", RemoteContract.Events.SubmitClap.rateLimitPerSecond) then
+			return
+		end
+
+		if type(payload) ~= "table" then
+			return
+		end
+
+		local claimedSync = tonumber(payload.t)
+
+		if claimedSync == nil or claimedSync ~= claimedSync then
+			return
+		end
+
+		local state = sessions[player]
+
+		if state == nil or state.completed or state.paused then
+			return
+		end
+
+		if state.coreMode ~= CoreRules.Modes.OnBeat or state.boardLayout ~= BoardLayouts.Default then
+			recordSuspicious(state, "clap_off_pad")
+			return
+		end
+
+		noteMusicShift(state, payload)
+
+		local now = os.clock()
+		local claimed = claimedSync + (now - Workspace:GetServerTimeNow())
+		local refused = state.ledger:submitClap(claimed, now)
+
+		if refused ~= nil then
+			recordSuspicious(state, refused)
+		end
+	end)
+
+	setTimingOffsetRemote.OnServerEvent:Connect(function(player, payload)
+		if type(payload) ~= "table" then
+			return
+		end
+
+		if not rateLimiter:allow(player, "SetTimingOffset", RemoteContract.Events.SetTimingOffset.rateLimitPerSecond) then
+			return
+		end
+
+		local offset = tonumber(payload.offsetSeconds)
+
+		if offset == nil or offset ~= offset then
+			return
+		end
+
+		offset = math.clamp(offset, -Timing.MaxTimingOffsetSeconds, Timing.MaxTimingOffsetSeconds)
+
+		local entry = getTimingOffsetState(player)
+
+		if payload.deviceDefault == true then
+			-- Device defaults never override a saved or manual calibration.
+			if not entry.calibrated then
+				entry.offset = offset
+			end
+		else
+			entry.offset = offset
+			entry.calibrated = true
+
+			local profile = getProfile(player)
+
+			if profile ~= nil then
+				if type(profile.settings) ~= "table" then
+					profile.settings = {}
+				end
+
+				profile.settings.timingOffsetSeconds = entry.offset
+				profile.settings.timingOffsetCalibrated = true
+				getBackend().PlayerData:markDirty(player)
+			end
+		end
+
+		syncTimingOffset(player)
+	end)
+
+	RunService.Heartbeat:Connect(function()
+		local now = os.clock()
+
+		for player, state in sessions do
+			if player.Parent == Players and state.session ~= nil and not state.session:isFinished() and not state.paused then
+				updatePositionAudit(player, state, now)
+
+				for _, reason in state.ledger:expire(now) do
+					recordSuspicious(state, reason)
+				end
+
+				processDueItems(player, state, now)
+				abilityService:tick(player, state, now)
+
+				if state.holding ~= nil then
+					-- While a hold is in progress its step has not advanced yet,
+					-- so expiry checks must wait for the hold to finalize.
+					updateHolding(player, state, now)
+				else
+					updateSlideTracking(state, now)
+					processDueSteps(player, state, now)
+				end
+			end
+		end
+	end)
+
+	-- Backend may start after RhythmService, so its run check is handed over once it exists.
+	task.spawn(function()
+		while getBackend() == nil do
+			task.wait(0.5)
+		end
+
+		getBackend().isInRun = function(player: Player): boolean
+			local state = sessions[player]
+
+			return state ~= nil and not state.completed
+		end
+	end)
+
+	print("[DanceDanceStep] RhythmService started")
+end
+
+return RhythmService

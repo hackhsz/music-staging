@@ -21,7 +21,7 @@ local MenuSignals = require(DDS:WaitForChild("MenuSignals"))
 local PromptUI = require(DDS:WaitForChild("PromptUI"))
 local PowerUpHandler = require(DDS:WaitForChild("PowerUpHandler"))
 local MatchRules = require(DDS:WaitForChild("MatchRules"))
-local Maid = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Maid"))
+local Maid = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Utility"):WaitForChild("Maid"))
 local ChartMirror = require(script.ChartMirror)
 local RemoteDancer = require(script.RemoteDancer)
 
